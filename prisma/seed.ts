@@ -186,9 +186,11 @@ async function main() {
     const weekend = dow === 5 || dow === 6;
     const weekdayFactor = weekend ? 0.74 : 1 + (dow === 4 ? 0.12 : 0);
 
-    let conversion = 0.082;
-    if (i >= 62) {
-      conversion = 0.082 - 0.025 * ((i - 62) / 27);
+    let conversion = 0.083;
+    if (i >= 76) {
+      conversion = 0.055 + rng() * 0.006;
+    } else if (i >= 70) {
+      conversion = 0.07 + rng() * 0.008;
     }
 
     const sessions = Math.round(
@@ -199,13 +201,13 @@ async function main() {
     const aov = 318 + (i < 55 ? 12 : -8) + rng() * 36;
     const revenue = Math.round(orders * aov);
 
-    const adSpendBase = i < 45 ? 1650 : 1650 + 1100 * ((i - 45) / 44);
+    const adSpendBase = i < 45 ? 1650 : 1650 + 1400 * ((i - 45) / 44);
     const adSpend = Math.round(adSpendBase * (0.88 + rng() * 0.2));
 
     const cogsRatio = 0.49 + (i > 70 ? 0.02 : 0);
     const cogs = Math.round(revenue * cogsRatio);
 
-    const opsPressure = i >= 55 ? 1 + 0.28 * ((i - 55) / 34) : 1;
+    const opsPressure = i >= 55 ? 1 + 0.32 * ((i - 55) / 34) : 1;
     const baseOpex = 4100 + adSpend * 0.08;
     const expenses = Math.round((baseOpex + 900) * opsPressure * (0.93 + rng() * 0.12));
 
@@ -217,11 +219,12 @@ async function main() {
     );
     const stockouts = i >= 72 && rng() > 0.55 ? 1 + (rng() > 0.7 ? 1 : 0) : 0;
 
-    const cashIn = Math.round(revenue * (i >= 68 ? 0.78 : 0.92));
+    const collectionRate = i >= 66 ? 0.52 : 0.82;
+    const cashIn = Math.round(revenue * collectionRate);
     const cashOut = Math.round(
-      cogs * 0.55 + expenses + (i === 70 ? 72000 : 0) + adSpend * 0.2,
+      cogs + expenses + adSpend * 0.35 + (i === 70 ? 125000 : 0),
     );
-    cash = Math.round(cash + cashIn - cashOut);
+    cash = Math.round(Math.max(142000, cash + cashIn - cashOut));
 
     dailyRows.push({
       organizationId: org.id,

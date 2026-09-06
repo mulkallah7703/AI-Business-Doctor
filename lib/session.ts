@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { getServerSession } from "next-auth";
 import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
@@ -5,6 +6,7 @@ import { authOptions } from "./auth";
 import { prisma } from "./prisma";
 
 export async function requireOrg() {
+  await connection();
   const session = await getServerSession(authOptions);
   const locale = await getLocale();
 

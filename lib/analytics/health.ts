@@ -69,7 +69,9 @@ export function computeHealth(input: {
   const customer = clamp(78 - neglected * 1.6 - atRiskShare * 20);
   const operational = clamp(90 - (fulfill - 18) * 3.4 - belowReorder * 5);
   const marketing = clamp(38 + roi * 12);
-  const cashflow = clamp(((last?.cashBalance ?? 0) / 380000) * 100);
+  const cashNow = last?.cashBalance ?? 0;
+  const cashStart = 382000;
+  const cashflow = clamp(92 - ((cashStart - cashNow) / cashStart) * 110);
 
   const pillars: HealthPillar[] = [
     {

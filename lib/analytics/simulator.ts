@@ -12,8 +12,6 @@ export function runSimulation(input: {
   const { scenario, dashboard, products, productId, locale } = input;
   const ar = locale !== "en";
   const monthlyRevenue = dashboard.revenue30;
-  const monthlyProfit = dashboard.profit30;
-  const cash = dashboard.cash;
   const product = products.find((p) => p.id === productId) ?? products.find((p) => p.id === "prod_argan") ?? products[0];
 
   if (scenario === "raise_prices") {
