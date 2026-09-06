@@ -5,10 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { applyMapping } from "@/lib/import/validate";
 import { commitImport, markSourceImported } from "@/lib/import/commit";
 import { refreshOrgIntelligence } from "@/lib/ai/refresh";
-import type { ImportKind } from "@/lib/connectors";
+import { IMPORT_KINDS, type ImportKind } from "@/lib/connectors";
+import { importMessages } from "@/lib/import/messages";
 
 const schema = z.object({
-  kind: z.enum(["sales", "expenses", "customers", "leads", "inventory", "campaigns"]),
+  kind: z.enum(IMPORT_KINDS),
   sourceKey: z.string().min(1),
   fileName: z.string().min(1),
   mapping: z.record(z.string(), z.string()),
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
 
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid payload", ...importMessages("INVALID_UPLOAD") }, { status: 400 });
   }
 
   const source = await prisma.dataSource.findFirst({
@@ -34,7 +35,11 @@ export async function POST(request: Request) {
   const mapped = applyMapping(parsed.data.rows, parsed.data.mapping, parsed.data.kind as ImportKind);
   if (!mapped.ok) {
     return NextResponse.json(
-      { error: mapped.error, missingRequired: mapped.missingRequired, errors: mapped.errors },
+      {
+        ...importMessages(mapped.error),
+        missingRequired: mapped.missingRequired,
+        errors: mapped.errors,
+      },
       { status: 422 },
     );
   }
@@ -74,13 +79,25 @@ export async function POST(request: Request) {
       intelligence,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Import failed";
     await prisma.dataSource.update({
       where: { id: source.id },
       data: {
         status: "error",
-        lastError: error instanceof Error ? error.message : "Import failed",
+        lastError: message,
       },
     });
-    return NextResponse.json({ error: "Import failed" }, { status: 500 });
+    await prisma.importBatch.create({
+      data: {
+        organizationId: auth.organization.id,
+        dataSourceKey: parsed.data.sourceKey,
+        kind: parsed.data.kind,
+        fileName: parsed.data.fileName,
+        rowCount: 0,
+        status: "error",
+        errorMessage: message,
+      },
+    });
+    return NextResponse.json({ ...importMessages("IMPORT_FAILED") }, { status: 400 });
   }
 }

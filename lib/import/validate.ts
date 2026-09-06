@@ -1,6 +1,7 @@
 import type { ImportKind } from "@/lib/connectors";
 import { KIND_FIELDS } from "./kinds";
 import { parseDate, parseNumber } from "./parse";
+import { rowErrorMessage } from "./messages";
 
 export type MappedRow = Record<string, string | number | Date | null>;
 
@@ -18,7 +19,7 @@ const NUMBER_FIELDS = new Set([
   "conversions",
   "refunds",
   "cogs",
-  "expenses",
+  "amount",
   "adSpend",
   "cashOut",
   "lifetimeValue",
@@ -30,6 +31,12 @@ const NUMBER_FIELDS = new Set([
   "reorderPoint",
   "spend",
   "clicks",
+  "salary",
+  "utilization",
+  "overtimeHours",
+  "headcount",
+  "payroll",
+  "fulfillmentHours",
 ]);
 
 export function applyMapping(
@@ -44,14 +51,24 @@ export function applyMapping(
   if (missingRequired.length) {
     return {
       ok: false as const,
-      error: "MISSING_MAPPING",
+      error: "MISSING_MAPPING" as const,
       missingRequired,
       rows: [] as MappedRow[],
-      errors: [] as { row: number; message: string }[],
+      errors: [] as { row: number; message: string; messageAr: string }[],
     };
   }
 
-  const errors: { row: number; message: string }[] = [];
+  if (rows.length === 0) {
+    return {
+      ok: false as const,
+      error: "EMPTY_FILE" as const,
+      missingRequired: [],
+      rows: [] as MappedRow[],
+      errors: [] as { row: number; message: string; messageAr: string }[],
+    };
+  }
+
+  const errors: { row: number; message: string; messageAr: string }[] = [];
   const mapped: MappedRow[] = [];
 
   rows.forEach((row, index) => {
@@ -61,7 +78,11 @@ export function applyMapping(
       const column = mapping[field.key];
       const raw = column ? row[column] : "";
       if (field.required && !String(raw ?? "").trim()) {
-        errors.push({ row: index + 2, message: `Missing ${field.key}` });
+        errors.push({
+          row: index + 2,
+          message: rowErrorMessage("missing", field.key, "en"),
+          messageAr: rowErrorMessage("missing", field.labelAr, "ar"),
+        });
         failed = true;
         continue;
       }
@@ -72,7 +93,11 @@ export function applyMapping(
       if (DATE_FIELDS.has(field.key)) {
         const date = parseDate(raw);
         if (!date) {
-          errors.push({ row: index + 2, message: `Invalid date for ${field.key}` });
+          errors.push({
+            row: index + 2,
+            message: rowErrorMessage("date", field.key, "en"),
+            messageAr: rowErrorMessage("date", field.labelAr, "ar"),
+          });
           failed = true;
           continue;
         }
@@ -80,8 +105,16 @@ export function applyMapping(
       } else if (NUMBER_FIELDS.has(field.key)) {
         const number = parseNumber(raw);
         if (number == null) {
-          errors.push({ row: index + 2, message: `Invalid number for ${field.key}` });
-          failed = true;
+          if (field.required) {
+            errors.push({
+              row: index + 2,
+              message: rowErrorMessage("number", field.key, "en"),
+              messageAr: rowErrorMessage("number", field.labelAr, "ar"),
+            });
+            failed = true;
+          } else {
+            next[field.key] = null;
+          }
           continue;
         }
         next[field.key] = number;
@@ -95,7 +128,7 @@ export function applyMapping(
   if (mapped.length === 0) {
     return {
       ok: false as const,
-      error: "NO_VALID_ROWS",
+      error: "NO_VALID_ROWS" as const,
       missingRequired: [],
       rows: mapped,
       errors,

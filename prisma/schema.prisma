@@ -81,7 +81,11 @@ model Customer {
   id             String       @id @default(cuid())
   organizationId String
   name           String
+  email          String?
+  phone          String?
   segment        String
+  source         String       @default("upload")
+  status         String       @default("active")
   lifetimeValue  Float
   lastOrderAt    DateTime?
   ordersCount    Int
@@ -92,6 +96,8 @@ model Lead {
   id             String       @id @default(cuid())
   organizationId String
   name           String
+  email          String?
+  phone          String?
   source         String
   status         String
   createdAt      DateTime
@@ -146,6 +152,9 @@ model DailyMetric {
   nps              Float
   fulfillmentHours Float
   stockouts        Int
+  headcount        Int          @default(0)
+  payroll          Float        @default(0)
+  utilization      Float        @default(0)
   organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, date])

@@ -1,4 +1,4 @@
-import type { DailyMetric, Insight, Product, Lead, Campaign } from "@prisma/client";
+import type { Campaign, Customer, DailyMetric, Employee, Insight, Lead, Product } from "@prisma/client";
 import { deltaPct } from "@/lib/format";
 
 export type SeriesPoint = { date: string; value: number };
@@ -64,8 +64,12 @@ export function computeDashboard(input: {
   products: Product[];
   leads: Lead[];
   campaigns: Campaign[];
+  customers?: Customer[];
+  employees?: Employee[];
 }): DashboardModel {
   const { metrics, insights, products, leads, campaigns } = input;
+  const customers = input.customers ?? [];
+  const employees = input.employees ?? [];
   const sorted = [...metrics].sort((a, b) => a.date.getTime() - b.date.getTime());
   const last30 = sorted.slice(-30);
   const prev30 = sorted.slice(-60, -30);
@@ -76,10 +80,12 @@ export function computeDashboard(input: {
   const revenue30 = sum(last30, (m) => m.revenue);
   const revenuePrev = sum(prev30, (m) => m.revenue);
   const cogs30 = sum(last30, (m) => m.cogs);
-  const expenses30 = sum(last30, (m) => m.expenses);
+  const expenses30 = sum(last30, (m) => m.expenses + (m.payroll ?? 0));
   const profit30 = revenue30 - cogs30 - expenses30;
   const profitPrev =
-    sum(prev30, (m) => m.revenue) - sum(prev30, (m) => m.cogs) - sum(prev30, (m) => m.expenses);
+    sum(prev30, (m) => m.revenue) -
+    sum(prev30, (m) => m.cogs) -
+    sum(prev30, (m) => m.expenses + (m.payroll ?? 0));
   const cash = last30.at(-1)?.cashBalance ?? 0;
   const cashPrev = prev30.at(-1)?.cashBalance ?? cash;
   const conversion14 =
@@ -93,16 +99,22 @@ export function computeDashboard(input: {
       ? 0
       : sum(campaigns, (c) => c.revenue) / Math.max(1, campaignSpend || adSpend30);
   const neglectedLeads = leads.filter((lead) => lead.status === "neglected").length;
-  const atRisk = 0; // customer mix handled in health
+  const atRisk = customers.filter((customer) => customer.segment === "at_risk" || customer.status === "at_risk").length;
   const belowReorder = products.filter((p) => p.stock <= p.reorderPoint).length;
+  const avgUtilization = employees.length
+    ? employees.reduce((total, employee) => total + employee.utilization, 0) / employees.length
+    : last30.at(-1)?.utilization || 0;
   const nps = last7.reduce((s, m) => s + m.nps, 0) / Math.max(1, last7.length);
   const fulfill =
     last14.reduce((s, m) => s + m.fulfillmentHours, 0) / Math.max(1, last14.length);
   const customerScore = Math.max(
     0,
-    Math.min(100, nps * 1.15 - neglectedLeads * 1.4 - atRisk),
+    Math.min(100, 62 + customers.length * 1.2 + nps * 0.35 - neglectedLeads * 1.4 - atRisk * 3),
   );
-  const opsScore = Math.max(0, Math.min(100, 92 - (fulfill - 18) * 3.2 - belowReorder * 4));
+  const opsScore = Math.max(
+    0,
+    Math.min(100, 92 - (fulfill - 18) * 3.2 - belowReorder * 4 - (0.8 - avgUtilization) * 20),
+  );
 
   const cards: KpiCardModel[] = [
     {
@@ -139,8 +151,8 @@ export function computeDashboard(input: {
       key: "costs",
       value: expenses30,
       format: "sar",
-      delta: deltaPct(expenses30, sum(prev30, (m) => m.expenses)),
-      series: series(last30, (m) => m.expenses),
+      delta: deltaPct(expenses30, sum(prev30, (m) => m.expenses + (m.payroll ?? 0))),
+      series: series(last30, (m) => m.expenses + (m.payroll ?? 0)),
       subtitleAr: "تشغيل + إعلان جزئي",
       subtitleEn: "Ops + partial ads",
       chip: chipFor(insights, "ops-cost-inflation"),
@@ -151,8 +163,8 @@ export function computeDashboard(input: {
       format: "score",
       delta: -neglectedLeads,
       series: series(last30, (m) => m.nps),
-      subtitleAr: `${neglectedLeads} محادثة واتساب مهملة`,
-      subtitleEn: `${neglectedLeads} neglected WhatsApp threads`,
+      subtitleAr: `${customers.length} عميل · ${neglectedLeads} فرصة مهملة`,
+      subtitleEn: `${customers.length} customers · ${neglectedLeads} neglected leads`,
       chip: neglectedLeads > 8 ? chipFor(insights, "neglected-whatsapp-leads") : undefined,
     },
     {
@@ -191,8 +203,8 @@ export function computeDashboard(input: {
       format: "score",
       delta: deltaPct(opsScore, 78),
       series: series(last30, (m) => m.fulfillmentHours),
-      subtitleAr: `${fulfill.toFixed(1)} ساعة تجهيز`,
-      subtitleEn: `${fulfill.toFixed(1)}h fulfillment`,
+      subtitleAr: `${fulfill.toFixed(1)} ساعة تجهيز · ${(avgUtilization * 100).toFixed(0)}٪ استغلال`,
+      subtitleEn: `${fulfill.toFixed(1)}h fulfillment · ${(avgUtilization * 100).toFixed(0)}% utilization`,
       chip: fulfill > 22 ? chipFor(insights, "ops-cost-inflation") : undefined,
     },
   ];

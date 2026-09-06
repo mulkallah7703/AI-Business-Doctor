@@ -1,0 +1,5 @@
+name,email,phone,source,status,estimatedValue,createdAt
+أمل الحمود,amal@example.com,0551111111,whatsapp,new,1200,2026-08-25
+بدر العيسى,badr@example.com,0552222222,instagram,neglected,900,2026-08-18
+جواهر السالم,jawaher@example.com,0553333333,website,new,2400,2026-08-22
+حسن القحطاني,hassan@example.com,0554444444,referral,open,1800,2026-08-27

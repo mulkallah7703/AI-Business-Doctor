@@ -1,8 +1,8 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireOrg } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
 import { computeDashboard } from "@/lib/analytics/metrics";
 import { computeHealth } from "@/lib/analytics/health";
+import { loadOrgSnapshot, orgHasData } from "@/lib/analytics/snapshot";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge, healthVariant } from "@/components/ui/badge";
@@ -21,23 +21,12 @@ export default async function DashboardPage({
   const t = await getTranslations("kpis");
   const healthT = await getTranslations("health");
   const nav = await getTranslations("nav");
-
-  const [metrics, insights, products, leads, campaigns] = await Promise.all([
-    prisma.dailyMetric.findMany({
-      where: { organizationId: organization.id },
-      orderBy: { date: "asc" },
-    }),
-    prisma.insight.findMany({ where: { organizationId: organization.id } }),
-    prisma.product.findMany({ where: { organizationId: organization.id } }),
-    prisma.lead.findMany({ where: { organizationId: organization.id } }),
-    prisma.campaign.findMany({ where: { organizationId: organization.id } }),
-  ]);
-
-  const dashboard = computeDashboard({ metrics, insights, products, leads, campaigns });
-  const health = computeHealth({ metrics, insights, products, leads, campaigns });
+  const snapshot = await loadOrgSnapshot(organization.id);
+  const dashboard = computeDashboard(snapshot);
+  const health = computeHealth(snapshot);
   const emptyT = await getTranslations("empty");
 
-  if (metrics.length === 0) {
+  if (!orgHasData(snapshot)) {
     return (
       <div className="space-y-6">
         <div>

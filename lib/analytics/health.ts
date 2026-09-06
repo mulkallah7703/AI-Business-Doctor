@@ -1,4 +1,4 @@
-import type { Campaign, DailyMetric, Insight, Lead, Product } from "@prisma/client";
+import type { Campaign, Customer, DailyMetric, Employee, Insight, Lead, Product } from "@prisma/client";
 import { computeDashboard } from "./metrics";
 
 export type HealthPillarKey =
@@ -42,6 +42,8 @@ export function computeHealth(input: {
   products: Product[];
   leads: Lead[];
   campaigns: Campaign[];
+  customers?: Customer[];
+  employees?: Employee[];
 }): HealthModel {
   const dashboard = computeDashboard(input);
   const last30 = [...input.metrics]

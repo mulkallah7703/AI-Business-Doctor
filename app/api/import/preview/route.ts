@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireApiOrg } from "@/lib/api-session";
 import { parseTabular } from "@/lib/import/parse";
-import { suggestMapping } from "@/lib/import/kinds";
-import type { ImportKind } from "@/lib/connectors";
+import { isImportKind, suggestMapping, KIND_FIELDS } from "@/lib/import/kinds";
+import { importMessages, type ImportErrorCode } from "@/lib/import/messages";
 
-const KINDS = new Set(["sales", "expenses", "customers", "leads", "inventory", "campaigns"]);
 const MAX_BYTES = 5 * 1024 * 1024;
+
+function fail(code: ImportErrorCode, status: number, extra?: Record<string, unknown>) {
+  return NextResponse.json({ ...importMessages(code), ...extra }, { status });
+}
 
 export async function POST(request: Request) {
   const auth = await requireApiOrg();
@@ -14,11 +17,14 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const kind = String(form.get("kind") ?? "");
   const file = form.get("file");
-  if (!KINDS.has(kind) || !(file instanceof File)) {
-    return NextResponse.json({ error: "Invalid upload" }, { status: 400 });
+  if (!isImportKind(kind) || !(file instanceof File)) {
+    return fail("INVALID_UPLOAD", 400);
+  }
+  if (file.size === 0) {
+    return fail("EMPTY_FILE", 422);
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "File too large" }, { status: 413 });
+    return fail("FILE_TOO_LARGE", 413);
   }
 
   try {
@@ -30,10 +36,18 @@ export async function POST(request: Request) {
       columns: parsed.columns,
       preview: parsed.rows.slice(0, 6),
       rowCount: parsed.rows.length,
-      suggestedMapping: suggestMapping(parsed.columns, kind as ImportKind),
+      suggestedMapping: suggestMapping(parsed.columns, kind),
+      fields: KIND_FIELDS[kind],
       rows: parsed.rows,
     });
-  } catch {
-    return NextResponse.json({ error: "Could not parse file" }, { status: 422 });
+  } catch (error) {
+    const code = error instanceof Error && error.message in {
+      EMPTY_FILE: 1,
+      NO_COLUMNS: 1,
+      EMPTY_SHEET: 1,
+    }
+      ? (error.message as ImportErrorCode)
+      : "EMPTY_FILE";
+    return fail(code === "EMPTY_SHEET" || code === "NO_COLUMNS" || code === "EMPTY_FILE" ? code : "EMPTY_FILE", 422);
   }
 }

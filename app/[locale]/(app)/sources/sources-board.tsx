@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { field } from "@/lib/utils";
-import { KIND_FIELDS } from "@/lib/import/kinds";
+import { KIND_FIELDS, kindLabels } from "@/lib/import/kinds";
 import type { ImportKind } from "@/lib/connectors";
 
 export type SourceRow = {
@@ -45,6 +45,38 @@ function statusVariant(status: string) {
   return "muted" as const;
 }
 
+function ColumnContract({
+  kind,
+  locale,
+  requiredLabel,
+  optionalLabel,
+}: {
+  kind: ImportKind;
+  locale: string;
+  requiredLabel: string;
+  optionalLabel: string;
+}) {
+  const fields = KIND_FIELDS[kind];
+  return (
+    <div className="mt-3 space-y-1 text-xs leading-6 text-muted-foreground">
+      <p>
+        <span className="text-primary">{requiredLabel}: </span>
+        {fields
+          .filter((item) => item.required)
+          .map((item) => field(locale, item.labelAr, item.labelEn))
+          .join(" · ")}
+      </p>
+      <p>
+        <span className="text-slate-400">{optionalLabel}: </span>
+        {fields
+          .filter((item) => !item.required)
+          .map((item) => field(locale, item.labelAr, item.labelEn))
+          .join(" · ")}
+      </p>
+    </div>
+  );
+}
+
 export function SourcesBoard({
   sources,
   locale,
@@ -61,13 +93,28 @@ export function SourcesBoard({
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
 
-  const fields = useMemo(() => (preview ? KIND_FIELDS[preview.kind] : []), [preview]);
+  const fields = useMemo(() => (preview ? KIND_FIELDS[preview.kind] : KIND_FIELDS[kind]), [preview, kind]);
+  const uploadable = Boolean(active && (active.importKinds.length || active.ingestMode !== "oauth"));
 
   function openSource(source: SourceRow) {
     setMessage("");
     setPreview(null);
     setActive(source);
     setKind(source.importKinds[0] ?? "sales");
+  }
+
+  function readError(body: { messageAr?: string; messageEn?: string; missingRequired?: string[]; error?: string }) {
+    const base = locale === "en" ? body.messageEn || body.error : body.messageAr || body.error;
+    if (body.missingRequired?.length) {
+      const labels = body.missingRequired
+        .map((key) => {
+          const def = fields.find((item) => item.key === key);
+          return def ? field(locale, def.labelAr, def.labelEn) : key;
+        })
+        .join(", ");
+      return `${base ?? t("importError")} (${labels})`;
+    }
+    return base || t("importError");
   }
 
   async function onFile(file: File) {
@@ -81,7 +128,7 @@ export function SourcesBoard({
     const body = await response.json();
     setBusy(false);
     if (!response.ok) {
-      setMessage(t("parseError"));
+      setMessage(readError(body) || t("parseError"));
       return;
     }
     setPreview({
@@ -112,7 +159,7 @@ export function SourcesBoard({
     const body = await response.json();
     setBusy(false);
     if (!response.ok) {
-      setMessage(t("importError"));
+      setMessage(readError(body));
       return;
     }
     setMessage(t("imported", { count: body.imported ?? 0 }));
@@ -137,6 +184,10 @@ export function SourcesBoard({
       conversions: Number(form.get("conversions") || 0),
       sessions: Number(form.get("sessions") || 0),
       adSpend: Number(form.get("adSpend") || 0),
+      fulfillmentHours: Number(form.get("fulfillmentHours") || 0),
+      headcount: Number(form.get("headcount") || 0),
+      payroll: Number(form.get("payroll") || 0),
+      utilization: Number(form.get("utilization") || 0),
     };
     const response = await fetch("/api/metrics", {
       method: "POST",
@@ -155,6 +206,33 @@ export function SourcesBoard({
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("formatsTitle")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("formatsLead")}</p>
+        </CardHeader>
+        <CardContent className="grid gap-3 text-sm md:grid-cols-2">
+          {(["sales", "expenses", "customers", "leads", "inventory", "campaigns", "employees", "ops"] as ImportKind[]).map(
+            (item) => (
+              <div key={item} className="rounded-lg border border-border/70 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-medium">{t(`kinds.${item}`)}</p>
+                  <a className="text-xs text-primary" href={`/api/import/sample?kind=${item}`}>
+                    {t("sample")}
+                  </a>
+                </div>
+                <ColumnContract
+                  kind={item}
+                  locale={locale}
+                  requiredLabel={t("required")}
+                  optionalLabel={t("optional")}
+                />
+              </div>
+            ),
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>{t("manualTitle")}</CardTitle>
@@ -178,6 +256,10 @@ export function SourcesBoard({
                   ["conversions", "number"],
                   ["leads", "number"],
                   ["adSpend", "number"],
+                  ["fulfillmentHours", "number"],
+                  ["headcount", "number"],
+                  ["payroll", "number"],
+                  ["utilization", "number"],
                 ] as const
               ).map(([name, type]) => (
                 <div key={name} className="space-y-1">
@@ -186,7 +268,7 @@ export function SourcesBoard({
                     name={name}
                     type={type === "date" ? "date" : "number"}
                     step={type === "number" ? "0.01" : undefined}
-                    required={name === "date" || name === "revenue"}
+                    required={name === "date"}
                   />
                 </div>
               ))}
@@ -211,24 +293,32 @@ export function SourcesBoard({
                   }
                 }}
               >
-              <div>
-                <h2 className="font-semibold">{field(locale, source.nameAr, source.nameEn)}</h2>
-                <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-                  {source.category}
-                </p>
-                <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                  {field(locale, source.descriptionAr, source.descriptionEn)}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {t("lastSync")}:{" "}
-                  {source.lastSyncAt
-                    ? new Date(source.lastSyncAt).toLocaleString(locale === "en" ? "en-GB" : "ar-SA")
-                    : t("never")}
-                </p>
-                {source.lastError ? (
-                  <p className="mt-1 text-xs text-rose-300">{source.lastError}</p>
-                ) : null}
-              </div>
+                <div>
+                  <h2 className="font-semibold">{field(locale, source.nameAr, source.nameEn)}</h2>
+                  <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
+                    {source.category}
+                  </p>
+                  <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                    {field(locale, source.descriptionAr, source.descriptionEn)}
+                  </p>
+                  {source.importKinds[0] ? (
+                    <ColumnContract
+                      kind={source.importKinds[0]}
+                      locale={locale}
+                      requiredLabel={t("required")}
+                      optionalLabel={t("optional")}
+                    />
+                  ) : null}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {t("lastSync")}:{" "}
+                    {source.lastSyncAt
+                      ? new Date(source.lastSyncAt).toLocaleString(locale === "en" ? "en-GB" : "ar-SA")
+                      : t("never")}
+                  </p>
+                  {source.lastError ? (
+                    <p className="mt-1 text-xs text-rose-300">{source.lastError}</p>
+                  ) : null}
+                </div>
               </button>
               <div className="flex shrink-0 flex-col items-end gap-2">
                 <Badge variant={statusVariant(source.status)}>{t(`status.${source.status}`)}</Badge>
@@ -237,9 +327,23 @@ export function SourcesBoard({
                     {t("comingSoon")}
                   </Button>
                 ) : (
-                  <Button type="button" size="sm" onClick={() => openSource(source)}>
-                    {source.ingestMode === "oauth" ? t("uploadInstead") : t("connect")}
-                  </Button>
+                  <>
+                    <Button type="button" size="sm" onClick={() => openSource(source)}>
+                      {source.ingestMode === "oauth" ? t("uploadInstead") : t("connect")}
+                    </Button>
+                    {source.importKinds.map((item) => (
+                      <a
+                        key={item}
+                        className="text-[11px] text-primary"
+                        href={`/api/import/sample?kind=${item}`}
+                      >
+                        {t("sample")}
+                        {source.importKinds.length > 1
+                          ? ` · ${field(locale, kindLabels(item).ar, kindLabels(item).en)}`
+                          : ""}
+                      </a>
+                    ))}
+                  </>
                 )}
               </div>
             </CardContent>
@@ -262,12 +366,20 @@ export function SourcesBoard({
               </p>
             ) : (
               <>
+                {active.comingSoonProvider ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("oauthSoon", { provider: active.comingSoonProvider })}
+                  </p>
+                ) : null}
                 {active.importKinds.length > 1 ? (
                   <div className="space-y-1">
                     <label className="text-sm">{t("kind")}</label>
                     <select
                       value={kind}
-                      onChange={(event) => setKind(event.target.value as ImportKind)}
+                      onChange={(event) => {
+                        setKind(event.target.value as ImportKind);
+                        setPreview(null);
+                      }}
                       className="flex h-11 w-full max-w-xs rounded-md border border-border bg-navy px-3 text-sm"
                     >
                       {active.importKinds.map((item) => (
@@ -277,6 +389,14 @@ export function SourcesBoard({
                       ))}
                     </select>
                   </div>
+                ) : null}
+                {uploadable ? (
+                  <ColumnContract
+                    kind={kind}
+                    locale={locale}
+                    requiredLabel={t("required")}
+                    optionalLabel={t("optional")}
+                  />
                 ) : null}
                 <div className="flex flex-wrap gap-2">
                   <Input
@@ -307,8 +427,12 @@ export function SourcesBoard({
                   {fields.map((fieldDef) => (
                     <div key={fieldDef.key} className="space-y-1">
                       <label className="text-xs">
-                        {fieldDef.key}
-                        {fieldDef.required ? " *" : ""}
+                        {field(locale, fieldDef.labelAr, fieldDef.labelEn)}
+                        {fieldDef.required ? (
+                          <span className="text-primary"> · {t("required")}</span>
+                        ) : (
+                          <span className="text-muted-foreground"> · {t("optional")}</span>
+                        )}
                       </label>
                       <select
                         value={preview.mapping[fieldDef.key] ?? ""}
