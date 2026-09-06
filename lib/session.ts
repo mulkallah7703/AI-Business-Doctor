@@ -17,14 +17,26 @@ export async function requireOrg() {
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
-      memberships: { include: { organization: true }, take: 1 },
+      memberships: { include: { organization: true } },
     },
   });
 
-  const organization = user?.memberships[0]?.organization;
+  const preferredId = session.user.organizationId;
+  const membership =
+    user?.memberships.find((item) => item.organizationId === preferredId) ??
+    user?.memberships[0];
+  const organization = membership?.organization;
   if (!user || !organization) {
     redirect(`/${locale}/login`);
   }
 
-  return { user, organization, locale, session };
+  return { user, organization, membership, locale, session };
+}
+
+export async function requireOnboardedOrg() {
+  const ctx = await requireOrg();
+  if (!ctx.organization.onboardingCompletedAt) {
+    redirect(`/${ctx.locale}/onboarding`);
+  }
+  return ctx;
 }

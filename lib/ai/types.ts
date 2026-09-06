@@ -18,7 +18,7 @@ export type BriefingPayload = {
   greeting: string;
   summary: string;
   items: BriefingItem[];
-  source: "openai" | "mock" | "seed";
+  source: "openai" | "mock" | "seed" | "empty";
 };
 
 export type SimulationScenario =

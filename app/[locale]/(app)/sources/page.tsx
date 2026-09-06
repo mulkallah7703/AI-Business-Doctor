@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { requireOrg } from "@/lib/session";
+import { requireOnboardedOrg } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { connectorByKey } from "@/lib/connectors";
 import { SourcesBoard } from "./sources-board";
 
 export default async function SourcesPage({
@@ -10,7 +11,7 @@ export default async function SourcesPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const { organization } = await requireOrg();
+  const { organization } = await requireOnboardedOrg();
   const t = await getTranslations("sources");
   const sources = await prisma.dataSource.findMany({
     where: { organizationId: organization.id },
@@ -26,14 +27,25 @@ export default async function SourcesPage({
       </div>
       <SourcesBoard
         locale={locale}
-        sources={sources.map((source) => ({
-          id: source.id,
-          nameAr: source.nameAr,
-          nameEn: source.nameEn,
-          category: source.category,
-          connected: source.connected,
-          lastSyncAt: source.lastSyncAt?.toISOString() ?? null,
-        }))}
+        sources={sources.map((source) => {
+          const catalog = connectorByKey(source.key);
+          return {
+            id: source.id,
+            key: source.key,
+            nameAr: source.nameAr,
+            nameEn: source.nameEn,
+            category: source.category,
+            connected: source.connected,
+            status: source.status,
+            ingestMode: source.ingestMode,
+            lastSyncAt: source.lastSyncAt?.toISOString() ?? null,
+            lastError: source.lastError,
+            importKinds: catalog?.importKinds ?? [],
+            comingSoonProvider: catalog?.comingSoonProvider ?? null,
+            descriptionAr: catalog?.descriptionAr ?? "",
+            descriptionEn: catalog?.descriptionEn ?? "",
+          };
+        })}
       />
     </div>
   );

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
 import { formatSar } from "@/lib/format";
+import { EmptyState } from "@/components/empty-state";
 
 const kindVariant = {
   urgent: "danger",
@@ -25,11 +26,29 @@ export default async function BriefingPage({
   setRequestLocale(locale);
   const { organization } = await requireOrg();
   const t = await getTranslations("briefing");
+  const emptyT = await getTranslations("empty");
   const briefing = await getOrCreateBriefing(organization.id, locale);
   const items = JSON.parse(briefing.itemsJson) as BriefingItem[];
   const insights = await prisma.insight.findMany({
     where: { organizationId: organization.id },
   });
+
+  if (briefing.source === "empty" || items.length === 0) {
+    return (
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-primary">{t("eyebrow")}</p>
+          <h1 className="mt-2 text-3xl font-semibold leading-snug">{briefing.greeting}</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">{briefing.summary}</p>
+        </div>
+        <EmptyState
+          title={emptyT("briefingTitle")}
+          body={emptyT("briefingBody")}
+          actionLabel={emptyT("connectCta")}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">

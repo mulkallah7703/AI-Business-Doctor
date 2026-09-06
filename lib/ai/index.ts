@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { computeDashboard } from "@/lib/analytics/metrics";
 import { mockBriefing, mockSimulation } from "./mock";
 import { openaiBriefing, openaiSimulation } from "./openai";
+import { emptyBriefing } from "./empty";
 import type { SimulationScenario } from "./types";
 
 export async function getOrCreateBriefing(organizationId: string, locale: string) {
@@ -22,14 +23,29 @@ export async function getOrCreateBriefing(organizationId: string, locale: string
     prisma.campaign.findMany({ where: { organizationId } }),
   ]);
 
+  if (metrics.length === 0 && insights.length === 0) {
+    const payload = emptyBriefing(locale);
+    return {
+      id: "empty",
+      organizationId,
+      date,
+      locale,
+      greeting: payload.greeting,
+      summary: payload.summary,
+      itemsJson: JSON.stringify(payload.items),
+      source: payload.source,
+      createdAt: date,
+    };
+  }
+
   const dashboard = computeDashboard({ metrics, insights, products, leads, campaigns });
-  let payload = mockBriefing(dashboard, locale);
+  let payload = mockBriefing(dashboard, locale, insights);
 
   if (process.env.OPENAI_API_KEY) {
     try {
       payload = await openaiBriefing(dashboard, locale);
     } catch {
-      payload = mockBriefing(dashboard, locale);
+      payload = mockBriefing(dashboard, locale, insights);
     }
   }
 

@@ -14,9 +14,13 @@ export async function requireApiOrg() {
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
-    include: { memberships: { include: { organization: true }, take: 1 } },
+    include: { memberships: { include: { organization: true } } },
   });
-  const organization = user?.memberships[0]?.organization;
+  const preferredId = session.user.organizationId;
+  const membership =
+    user?.memberships.find((item) => item.organizationId === preferredId) ??
+    user?.memberships[0];
+  const organization = membership?.organization;
   if (!user || !organization) {
     return {
       ok: false as const,
@@ -24,5 +28,5 @@ export async function requireApiOrg() {
     };
   }
 
-  return { ok: true as const, user, organization };
+  return { ok: true as const, user, organization, membership };
 }
