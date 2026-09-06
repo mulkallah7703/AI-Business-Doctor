@@ -87,8 +87,11 @@ export function computeDashboard(input: {
   const prevConversion14 =
     sum(prev14, (m) => m.conversions) / Math.max(1, sum(prev14, (m) => m.sessions));
   const adSpend30 = sum(last30, (m) => m.adSpend);
+  const campaignSpend = sum(campaigns, (c) => c.spend);
   const campaignRoi =
-    sum(campaigns, (c) => c.revenue) / Math.max(1, sum(campaigns, (c) => c.spend));
+    campaigns.length === 0 && adSpend30 === 0
+      ? 0
+      : sum(campaigns, (c) => c.revenue) / Math.max(1, campaignSpend || adSpend30);
   const neglectedLeads = leads.filter((lead) => lead.status === "neglected").length;
   const atRisk = 0; // customer mix handled in health
   const belowReorder = products.filter((p) => p.stock <= p.reorderPoint).length;
@@ -176,7 +179,7 @@ export function computeDashboard(input: {
       key: "marketing",
       value: campaignRoi,
       format: "score",
-      delta: deltaPct(sum(last30, (m) => m.revenue) / Math.max(1, adSpend30), 3.2),
+      delta: adSpend30 ? deltaPct(sum(last30, (m) => m.revenue) / Math.max(1, adSpend30), 3.2) : 0,
       series: series(last30, (m) => (m.adSpend ? m.revenue / m.adSpend : 0)),
       subtitleAr: "عائد الحملات المدمج",
       subtitleEn: "Blended campaign ROI",
