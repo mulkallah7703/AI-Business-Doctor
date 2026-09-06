@@ -1,6 +1,7 @@
 import { utcDay } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 import { computeDashboard } from "@/lib/analytics/metrics";
+import { loadOrgSnapshot, orgHasData } from "@/lib/analytics/snapshot";
 import { mockBriefing, mockSimulation } from "./mock";
 import { openaiBriefing, openaiSimulation } from "./openai";
 import { emptyBriefing } from "./empty";
@@ -15,15 +16,10 @@ export async function getOrCreateBriefing(organizationId: string, locale: string
   });
   if (existing) return existing;
 
-  const [metrics, insights, products, leads, campaigns] = await Promise.all([
-    prisma.dailyMetric.findMany({ where: { organizationId }, orderBy: { date: "asc" } }),
-    prisma.insight.findMany({ where: { organizationId } }),
-    prisma.product.findMany({ where: { organizationId } }),
-    prisma.lead.findMany({ where: { organizationId } }),
-    prisma.campaign.findMany({ where: { organizationId } }),
-  ]);
+  const snapshot = await loadOrgSnapshot(organizationId);
+  const { metrics, insights, products, leads, campaigns, customers, employees } = snapshot;
 
-  if (metrics.length === 0 && insights.length === 0) {
+  if (!orgHasData(snapshot) && insights.length === 0) {
     const payload = emptyBriefing(locale);
     return {
       id: "empty",
@@ -38,7 +34,15 @@ export async function getOrCreateBriefing(organizationId: string, locale: string
     };
   }
 
-  const dashboard = computeDashboard({ metrics, insights, products, leads, campaigns });
+  const dashboard = computeDashboard({
+    metrics,
+    insights,
+    products,
+    leads,
+    campaigns,
+    customers,
+    employees,
+  });
   let payload = mockBriefing(dashboard, locale, insights);
 
   if (process.env.OPENAI_API_KEY) {
@@ -68,18 +72,9 @@ export async function simulateScenario(input: {
   productId?: string;
   locale: string;
 }) {
-  const [metrics, insights, products, leads, campaigns] = await Promise.all([
-    prisma.dailyMetric.findMany({
-      where: { organizationId: input.organizationId },
-      orderBy: { date: "asc" },
-    }),
-    prisma.insight.findMany({ where: { organizationId: input.organizationId } }),
-    prisma.product.findMany({ where: { organizationId: input.organizationId } }),
-    prisma.lead.findMany({ where: { organizationId: input.organizationId } }),
-    prisma.campaign.findMany({ where: { organizationId: input.organizationId } }),
-  ]);
-
-  const dashboard = computeDashboard({ metrics, insights, products, leads, campaigns });
+  const snapshot = await loadOrgSnapshot(input.organizationId);
+  const { products } = snapshot;
+  const dashboard = computeDashboard(snapshot);
 
   if (process.env.OPENAI_API_KEY) {
     try {

@@ -16,7 +16,11 @@ export function parseTabular(buffer: Buffer, fileName: string) {
     raw: false,
     blankrows: false,
   });
-  const headerRow = (matrix[0] ?? []).map((cell) => String(cell ?? "").trim());
+  const headerRow = (matrix[0] ?? []).map((cell, index) => {
+    let value = String(cell ?? "").trim();
+    if (index === 0) value = value.replace(/^\uFEFF/, "");
+    return value;
+  });
   const columns = headerRow.filter(Boolean);
   if (columns.length === 0) {
     throw new Error("NO_COLUMNS");
@@ -31,6 +35,10 @@ export function parseTabular(buffer: Buffer, fileName: string) {
     });
     return record;
   }).filter((row) => Object.values(row).some((value) => value !== ""));
+
+  if (rows.length === 0) {
+    throw new Error("EMPTY_FILE");
+  }
 
   return { columns, rows, fileName };
 }

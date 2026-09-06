@@ -1,0 +1,5 @@
+name,email,phone,status,source,lifetimeValue,ordersCount,lastOrderAt
+شركة أفق,ofoq@example.com,0501111111,vip,referral,42000,18,2026-08-20
+نورة العتيبي,noura@example.com,0502222222,regular,store,5400,7,2026-08-28
+خالد السبيعي,khaled@example.com,0503333333,at_risk,whatsapp,2100,3,2026-07-15
+سارة الدوسري,sara@example.com,0504444444,new,instagram,189,1,2026-08-30

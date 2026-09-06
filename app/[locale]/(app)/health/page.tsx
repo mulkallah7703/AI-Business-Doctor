@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireOrg } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
 import { computeHealth } from "@/lib/analytics/health";
+import { loadOrgSnapshot, orgHasData } from "@/lib/analytics/snapshot";
 import { HealthBoard } from "@/components/health/health-board";
 import { EmptyState } from "@/components/empty-state";
 
@@ -15,19 +15,8 @@ export default async function HealthPage({
   const { organization } = await requireOrg();
   const t = await getTranslations("health");
   const emptyT = await getTranslations("empty");
-
-  const [metrics, insights, products, leads, campaigns] = await Promise.all([
-    prisma.dailyMetric.findMany({
-      where: { organizationId: organization.id },
-      orderBy: { date: "asc" },
-    }),
-    prisma.insight.findMany({ where: { organizationId: organization.id } }),
-    prisma.product.findMany({ where: { organizationId: organization.id } }),
-    prisma.lead.findMany({ where: { organizationId: organization.id } }),
-    prisma.campaign.findMany({ where: { organizationId: organization.id } }),
-  ]);
-
-  const model = computeHealth({ metrics, insights, products, leads, campaigns });
+  const snapshot = await loadOrgSnapshot(organization.id);
+  const model = computeHealth(snapshot);
 
   return (
     <div className="space-y-6">
@@ -35,7 +24,7 @@ export default async function HealthPage({
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("lead")}</p>
       </div>
-      {metrics.length === 0 ? (
+      {!orgHasData(snapshot) ? (
         <EmptyState
           title={emptyT("healthTitle")}
           body={emptyT("healthBody")}

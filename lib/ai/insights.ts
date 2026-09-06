@@ -1,4 +1,4 @@
-import type { Campaign, DailyMetric, Lead, Product } from "@prisma/client";
+import type { Campaign, Customer, DailyMetric, Employee, Lead, Product } from "@prisma/client";
 import type { DashboardModel } from "@/lib/analytics/metrics";
 import { computeHealth } from "@/lib/analytics/health";
 import { prefixedId } from "@/lib/ids";
@@ -36,9 +36,20 @@ export function buildInsightsFromOrg(input: {
   products: Product[];
   leads: Lead[];
   campaigns: Campaign[];
+  customers?: Customer[];
+  employees?: Employee[];
 }): InsightDraft[] {
   const { dashboard, metrics, products, leads, campaigns } = input;
-  if (metrics.length === 0 && products.length === 0 && leads.length === 0 && campaigns.length === 0) {
+  const customers = input.customers ?? [];
+  const employees = input.employees ?? [];
+  if (
+    metrics.length === 0 &&
+    products.length === 0 &&
+    leads.length === 0 &&
+    campaigns.length === 0 &&
+    customers.length === 0 &&
+    employees.length === 0
+  ) {
     return [];
   }
 
@@ -224,7 +235,7 @@ export function buildInsightsFromOrg(input: {
     });
   }
 
-  if (drafts.length === 0 && (metrics.length || products.length)) {
+  if (drafts.length === 0 && (metrics.length || products.length || customers.length || employees.length || leads.length || campaigns.length)) {
     drafts.push({
       id: prefixedId("ins"),
       slug: "first-signal",

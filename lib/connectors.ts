@@ -4,13 +4,18 @@ export const DEMO_EMAIL = "demo@businessdoctor.ai";
 
 export type IngestMode = "upload" | "manual" | "oauth";
 export type SourceStatus = "disconnected" | "connected" | "syncing" | "error" | "coming_soon";
-export type ImportKind =
-  | "sales"
-  | "expenses"
-  | "customers"
-  | "leads"
-  | "inventory"
-  | "campaigns";
+export const IMPORT_KINDS = [
+  "sales",
+  "expenses",
+  "customers",
+  "leads",
+  "inventory",
+  "campaigns",
+  "employees",
+  "ops",
+] as const;
+
+export type ImportKind = (typeof IMPORT_KINDS)[number];
 
 export type ConnectorDef = {
   key: string;
@@ -114,10 +119,10 @@ export const CONNECTOR_CATALOG: ConnectorDef[] = [
     nameAr: "الموظفون",
     nameEn: "Employees",
     category: "ops",
-    ingestMode: "manual",
-    importKinds: [],
-    descriptionAr: "أدخل مؤشرات التشغيل يدوياً إن كان الملف ثقيلاً اليوم.",
-    descriptionEn: "Enter operating KPIs manually when a spreadsheet is more than you need today.",
+    ingestMode: "upload",
+    importKinds: ["employees", "ops"],
+    descriptionAr: "ارفع كشف الموظفين أو مؤشرات التشغيل اليومية: العدد، الرواتب، والاستغلال.",
+    descriptionEn: "Upload a staff roster or daily ops KPIs: headcount, payroll, and utilization.",
   },
   {
     key: "bookings",

@@ -16,6 +16,10 @@ const schema = z.object({
   conversions: z.number().int().nonnegative().default(0),
   sessions: z.number().int().nonnegative().default(0),
   adSpend: z.number().nonnegative().default(0),
+  fulfillmentHours: z.number().nonnegative().default(0),
+  headcount: z.number().int().nonnegative().default(0),
+  payroll: z.number().nonnegative().default(0),
+  utilization: z.number().nonnegative().default(0),
 });
 
 export async function POST(request: Request) {
@@ -46,8 +50,11 @@ export async function POST(request: Request) {
     adSpend: parsed.data.adSpend,
     refunds: 0,
     nps: 0,
-    fulfillmentHours: 0,
+    fulfillmentHours: parsed.data.fulfillmentHours,
     stockouts: 0,
+    headcount: parsed.data.headcount,
+    payroll: parsed.data.payroll,
+    utilization: parsed.data.utilization > 1 ? parsed.data.utilization / 100 : parsed.data.utilization,
   };
 
   const metric = await prisma.dailyMetric.upsert({
@@ -62,15 +69,16 @@ export async function POST(request: Request) {
     },
   });
 
-  const sales = await prisma.dataSource.findFirst({
-    where: { organizationId: auth.organization.id, key: "sales" },
-  });
-  if (sales) {
-    await prisma.dataSource.update({
-      where: { id: sales.id },
-      data: { connected: true, status: "connected", lastSyncAt: new Date(), lastError: null },
-    });
+  const keys = ["sales"];
+  if (parsed.data.expenses > 0 || parsed.data.cogs > 0) keys.push("expenses");
+  if (parsed.data.adSpend > 0) keys.push("ads");
+  if (parsed.data.headcount > 0 || parsed.data.payroll > 0 || parsed.data.fulfillmentHours > 0) {
+    keys.push("employees");
   }
+  await prisma.dataSource.updateMany({
+    where: { organizationId: auth.organization.id, key: { in: keys } },
+    data: { connected: true, status: "connected", lastSyncAt: new Date(), lastError: null },
+  });
 
   const intelligence = await refreshOrgIntelligence(auth.organization.id);
   return NextResponse.json({ id: metric.id, intelligence });
