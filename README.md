@@ -37,7 +37,7 @@ This repo is wired for **Vercel + Neon or Vercel Postgres**. There is no Vercel 
 1. [vercel.com/new](https://vercel.com/new) → Import `mulkallah7703/AI-Business-Doctor`
 2. Framework: Next.js (auto)
 3. Build command is already `npm run build:vercel` via `vercel.json`
-4. **Do not deploy yet** — add env + a database first
+4. Preview deploys succeed without a database (marketing pages render). Add Postgres before relying on login / seed.
 
 ### 2. Create the database
 

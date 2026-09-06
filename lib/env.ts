@@ -21,6 +21,11 @@ export function applyRuntimeEnv() {
       process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
     }
   }
+
+  if (!process.env.NEXTAUTH_SECRET && process.env.VERCEL) {
+    process.env.NEXTAUTH_SECRET =
+      process.env.VERCEL_GIT_COMMIT_SHA || "preview-only-set-NEXTAUTH_SECRET";
+  }
 }
 
 applyRuntimeEnv();

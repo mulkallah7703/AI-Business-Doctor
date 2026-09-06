@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 /**
- * Routes Prisma to SQLite (local file: URLs) or Postgres (production).
+ * Routes Prisma to SQLite (local file: URLs) or Postgres (Vercel / Neon).
  * Generates a throwaway SQLite schema from prisma/schema.prisma so models stay DRY.
+ *
+ * On Vercel without a Postgres URL we still generate a Postgres client using a
+ * dummy URL so `npm install` / `next build` succeed. Runtime queries need a real DB.
  */
 const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+
+const DUMMY_POSTGRES =
+  "postgresql://prisma:prisma@127.0.0.1:5432/prisma?schema=public";
 
 function loadDotEnv() {
   const envPath = path.join(process.cwd(), ".env");
@@ -27,36 +33,61 @@ function loadDotEnv() {
   }
 }
 
-loadDotEnv();
+function isSqliteUrl(url) {
+  return !url || /^(file:|sqlite:)/i.test(url);
+}
 
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL =
+function postgresCandidate() {
+  const url = process.env.DATABASE_URL;
+  if (url && !isSqliteUrl(url)) return url;
+  return (
     process.env.POSTGRES_PRISMA_URL ||
     process.env.POSTGRES_URL ||
     process.env.NEON_DATABASE_URL ||
-    "file:./dev.db";
+    ""
+  );
 }
 
-if (!process.env.DIRECT_URL) {
+loadDotEnv();
+
+const onVercel = Boolean(process.env.VERCEL);
+const realPostgres = postgresCandidate();
+const forwarded = process.argv.slice(2);
+const isGenerate = forwarded[0] === "generate";
+const writesDatabase = ["db", "migrate", "studio"].includes(forwarded[0]);
+
+if (onVercel || realPostgres) {
+  process.env.DATABASE_URL = realPostgres || (isGenerate ? DUMMY_POSTGRES : realPostgres);
   process.env.DIRECT_URL =
-    process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL;
+    process.env.DIRECT_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.DATABASE_URL;
+
+  if (writesDatabase && !realPostgres) {
+    console.warn(
+      "No Postgres DATABASE_URL (or POSTGRES_PRISMA_URL) on Vercel — skipping Prisma DB command.\n" +
+        "Attach Neon / Vercel Postgres, then redeploy (or POST /api/admin/seed).",
+    );
+    process.exit(0);
+  }
+
+  if (!process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = DUMMY_POSTGRES;
+  }
+  if (!process.env.DIRECT_URL) {
+    process.env.DIRECT_URL = process.env.DATABASE_URL;
+  }
+} else {
+  if (!process.env.DATABASE_URL) process.env.DATABASE_URL = "file:./dev.db";
+  if (!process.env.DIRECT_URL) process.env.DIRECT_URL = process.env.DATABASE_URL;
 }
 
 const databaseUrl = process.env.DATABASE_URL || "file:./dev.db";
-const isSqlite = /^(file:|sqlite:)/i.test(databaseUrl);
-
-if (process.env.VERCEL && isSqlite) {
-  console.error(
-    "DATABASE_URL is SQLite, which cannot persist on Vercel.\n" +
-      "Set a Neon or Vercel Postgres URL, and set DIRECT_URL to the unpooled URL.",
-  );
-  process.exit(1);
-}
-
+const useSqlite = !onVercel && isSqliteUrl(databaseUrl);
 const postgresSchema = path.join("prisma", "schema.prisma");
 let schema = postgresSchema;
 
-if (isSqlite) {
+if (useSqlite) {
   const source = fs.readFileSync(postgresSchema, "utf8");
   const sqlite = source
     .replace(/provider\s*=\s*"postgresql"/, 'provider = "sqlite"')
@@ -69,7 +100,6 @@ if (isSqlite) {
 }
 
 const prismaCli = require.resolve("prisma/build/index.js");
-const forwarded = process.argv.slice(2);
 const args = [...forwarded, "--schema", schema];
 
 const result = spawnSync(process.execPath, [prismaCli, ...args], {
