@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "title": "AI Business Doctor",
+    "description": "A standing AI executive advisor for SMEs — detect, diagnose, predict, and recommend."
+  },
+  "brand": {
+    "name": "AI Business Doctor",
+    "nameEn": "طبيب الأعمال الذكي",
+    "tagline": "Your CEO briefing, every morning"
+  },
+  "nav": {
+    "briefing": "Today's briefing",
+    "dashboard": "Command center",
+    "health": "Business health",
+    "insights": "Diagnosis",
+    "simulator": "What-if",
+    "actions": "Action center",
+    "sources": "Data sources",
+    "logout": "Sign out",
+    "login": "Open demo"
+  },
+  "auth": {
+    "title": "Sign in",
+    "subtitle": "Demo workspace for Al-Noor Trading",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Enter",
+    "error": "Invalid credentials",
+    "demoHint": "Demo account",
+    "back": "Back to marketing site"
+  },
+  "landing": {
+    "kicker": "Built for SMEs",
+    "headline": "Your AI executive physician — watching, diagnosing, and prescribing before the damage compounds",
+    "subhead": "An Arabic-first platform that turns sales, inventory, marketing, and cash into a daily briefing: detect, diagnose, predict, recommend, act, then measure.",
+    "ctaPrimary": "Try the live demo",
+    "ctaSecondary": "See the loop",
+    "trust": "Designed for Saudi retail and e-commerce — SAR throughout, Arabic as the default.",
+    "pipelineTitle": "The full decision loop",
+    "pipelineLead": "Not a BI dashboard. An operating room for the CEO.",
+    "featuresTitle": "What the owner sees every morning",
+    "pricingTitle": "Clear tiers, no theatre",
+    "pricingLead": "Start with diagnosis. Expand when the data becomes a habit.",
+    "ctaBand": "Four minutes is enough to see where margin is bleeding.",
+    "ctaBandBtn": "Enter Al-Noor"
+  },
+  "pipeline": {
+    "detect": { "title": "Detect", "body": "Daily drift in conversion, cost, cash, and stock." },
+    "diagnose": { "title": "Diagnose", "body": "A root cause in business language, not report language." },
+    "predict": { "title": "Predict", "body": "The SAR impact if the path runs another thirty days." },
+    "recommend": { "title": "Recommend", "body": "One clear decision that can be executed this week." },
+    "act": { "title": "Act", "body": "Traceable work inside the action center." },
+    "measure": { "title": "Measure", "body": "Before and after: did conversion return? Did cash recover?" }
+  },
+  "pricing": {
+    "sar": "SAR / mo",
+    "starter": {
+      "name": "Starter",
+      "price": "499",
+      "desc": "One organization, a daily briefing, and a health score.",
+      "features": ["Morning briefing", "Command center", "Six-pillar health", "Single user"]
+    },
+    "growth": {
+      "name": "Growth",
+      "price": "1,499",
+      "desc": "Deep diagnosis, the simulator, and the action center.",
+      "features": ["Everything in Starter", "Insights engine", "What-if simulator", "Measurable actions"]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "price": "Custom",
+      "desc": "Real connectors, multi-branch, and governance.",
+      "features": ["Everything in Growth", "Operational connectors", "Branches & brands", "Service agreement"]
+    }
+  },
+  "kpis": {
+    "revenue": "Revenue",
+    "profit": "Profit",
+    "cash": "Cash flow",
+    "costs": "Costs",
+    "customer": "Customer health",
+    "funnel": "Sales funnel",
+    "inventory": "Inventory",
+    "marketing": "Marketing ROI",
+    "ops": "Operational health",
+    "vsPrev": "vs previous 30 days"
+  },
+  "health": {
+    "title": "Business health score",
+    "lead": "One explainable score. Select a pillar to see its drivers.",
+    "overall": "Overall",
+    "financial": "Financial",
+    "sales": "Sales",
+    "customer": "Customer",
+    "operational": "Operational",
+    "marketing": "Marketing",
+    "cashflow": "Cash flow",
+    "drivers": "Top drivers",
+    "statusHealthy": "Stable",
+    "statusWatch": "Needs watch",
+    "statusCritical": "Needs action"
+  },
+  "briefing": {
+    "eyebrow": "CEO briefing",
+    "org": "Al-Noor Trading Establishment",
+    "cached": "Persisted for today",
+    "live": "Generated from live metrics",
+    "mockNote": "AI layer is on the deterministic mock — set OPENAI_API_KEY for the live model.",
+    "kind": {
+      "urgent": "Urgent problem",
+      "opportunity": "Opportunity",
+      "risk": "Risk",
+      "growth": "Growth",
+      "recommendation": "Recommendation"
+    }
+  },
+  "insights": {
+    "title": "Insights engine",
+    "lead": "Detect → Diagnose → Predict → Recommend. Every finding carries a SAR effect.",
+    "detect": "Detect",
+    "diagnose": "Diagnose",
+    "predict": "Predict",
+    "recommend": "Recommend",
+    "effect": "Estimated financial effect",
+    "open": "Details",
+    "severity": "Severity",
+    "type": "Type",
+    "back": "All insights"
+  },
+  "simulator": {
+    "title": "What-if simulator",
+    "lead": "Test the decision before you pay for it. The current model is metric-bound and ready for a real LLM layer later.",
+    "run": "Project impact",
+    "running": "Estimating…",
+    "assumptions": "Assumptions",
+    "revenue": "Revenue impact",
+    "profit": "Profit impact",
+    "cash": "Cash impact",
+    "raise_prices": "Raise prices 10%",
+    "cut_ads": "Cut ad spend 20%",
+    "hire_staff": "Hire 2 staff",
+    "focus_product": "Focus on a product",
+    "product": "Product"
+  },
+  "actions": {
+    "title": "Action center",
+    "lead": "Recommendations become tasks. Execution is judged by measured outcome, not a checkbox.",
+    "pending": "Pending",
+    "in_progress": "In progress",
+    "done": "Done",
+    "execute": "Execute & measure",
+    "executing": "Measuring…",
+    "measured": "Outcome after measure",
+    "before": "Before",
+    "after": "After"
+  },
+  "sources": {
+    "title": "Data sources",
+    "lead": "Mock connectors for the MVP. Connect only toggles state — no real OAuth.",
+    "connected": "Connected",
+    "disconnected": "Not connected",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "lastSync": "Last sync",
+    "never": "Never",
+    "note": "Phase 2: real sales, banking, ads, and WhatsApp connectors."
+  },
+  "common": {
+    "sar": "SAR",
+    "loading": "Loading…",
+    "demoUser": "Fahad Al-Noor",
+    "days30": "Last 30 days",
+    "viewInsight": "Open diagnosis"
+  }
+}

@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-navy: var(--navy);
+  --font-sans: var(--font-app);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 1.25rem;
+}
+
+:root {
+  --background: #070b14;
+  --foreground: #e8eef8;
+  --card: #0d1524;
+  --card-foreground: #e8eef8;
+  --primary: #2dd4bf;
+  --primary-foreground: #042f2e;
+  --muted: #121a2b;
+  --muted-foreground: #94a3b8;
+  --accent: #163154;
+  --accent-foreground: #dbeafe;
+  --destructive: #fb7185;
+  --border: #1e293b;
+  --ring: #2dd4bf;
+  --success: #34d399;
+  --warning: #f59e0b;
+  --navy: #0a1628;
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-app), "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, rgba(45, 212, 191, 0.08), transparent 50%),
+    radial-gradient(900px 500px at 110% 0%, rgba(30, 64, 175, 0.18), transparent 45%);
+}
+
+* {
+  border-color: var(--border);
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: rgba(45, 212, 191, 0.28);
+}
+
+.ecg-line {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='40' viewBox='0 0 160 40' fill='none'%3E%3Cpath d='M0 20 H28 L34 20 L40 8 L48 32 L56 20 H80 L86 20 L92 12 L100 28 L108 20 H160' stroke='%232dd4bf' stroke-opacity='0.35' stroke-width='1.4'/%3E%3C/svg%3E");
+}
