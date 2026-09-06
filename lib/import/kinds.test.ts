@@ -119,8 +119,11 @@ const optionalBad = applyMapping(
 assert.equal(optionalBad.ok, true);
 assert.equal(optionalBad.rows[0].cost, null);
 
+type Row = Record<string, unknown> & { id?: string };
+type Where = Record<string, unknown>;
+
 function memoryDb() {
-  const tables: Record<string, any[]> = {
+  const tables: Record<string, Row[]> = {
     dailyMetric: [],
     customer: [],
     lead: [],
@@ -137,41 +140,53 @@ function memoryDb() {
     ],
   };
 
-  const match = (row: any, where: any = {}) =>
+  const match = (row: Row, where: Where = {}) =>
     Object.entries(where).every(([key, value]) => {
       if (value && typeof value === "object" && !Array.isArray(value)) {
-        if ("equals" in value) return row[key] === value.equals;
-        return Object.entries(value as Record<string, unknown>).every(([inner, innerValue]) => row[inner] === innerValue);
+        const nested = value as Record<string, unknown>;
+        if ("equals" in nested) return row[key] === nested.equals;
+        return Object.entries(nested).every(([inner, innerValue]) => row[inner] === innerValue);
       }
       return row[key] === value;
     });
 
   const repo = (name: string) => ({
-    findMany: async ({ where }: any = {}) => tables[name].filter((row) => match(row, where)),
-    findFirst: async ({ where }: any = {}) => tables[name].find((row) => match(row, where)) ?? null,
-    findUnique: async ({ where }: any = {}) => {
-      const compound = where.organizationId_date || where.organizationId_sku || where.organizationId_key;
+    findMany: async ({ where }: { where?: Where } = {}) => tables[name].filter((row) => match(row, where)),
+    findFirst: async ({ where }: { where?: Where } = {}) => tables[name].find((row) => match(row, where)) ?? null,
+    findUnique: async ({ where }: { where?: Where } = {}) => {
+      const compound = (where?.organizationId_date ||
+        where?.organizationId_sku ||
+        where?.organizationId_key) as Where | undefined;
       if (compound) return tables[name].find((row) => match(row, compound)) ?? null;
       return tables[name].find((row) => match(row, where)) ?? null;
     },
-    create: async ({ data }: any) => {
-      const row = { id: data.id ?? `${name}_${tables[name].length + 1}`, ...data };
+    create: async ({ data }: { data: Row }) => {
+      const row = { id: String(data.id ?? `${name}_${tables[name].length + 1}`), ...data };
       tables[name].push(row);
       return row;
     },
-    update: async ({ where, data }: any) => {
+    update: async ({ where, data }: { where: { id: string }; data: Row }) => {
       const row = tables[name].find((item) => item.id === where.id);
+      if (!row) throw new Error("missing row");
       Object.assign(row, data);
       return row;
     },
-    upsert: async ({ where, update, create }: any) => {
-      const compound = where.organizationId_sku;
-      const existing = tables[name].find((row) => match(row, compound || where));
+    upsert: async ({
+      where,
+      update,
+      create,
+    }: {
+      where: Where;
+      update: Row;
+      create: Row;
+    }) => {
+      const compound = (where.organizationId_sku as Where | undefined) ?? where;
+      const existing = tables[name].find((row) => match(row, compound));
       if (existing) {
         Object.assign(existing, update);
         return existing;
       }
-      const row = { id: create.id ?? `${name}_${tables[name].length + 1}`, ...create };
+      const row = { id: String(create.id ?? `${name}_${tables[name].length + 1}`), ...create };
       tables[name].push(row);
       return row;
     },
