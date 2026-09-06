@@ -8,6 +8,7 @@
     "build:vercel": "node scripts/vercel-build.cjs",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx lib/import/kinds.test.ts",
     "seed": "tsx prisma/seed.ts",
     "postinstall": "node scripts/prisma.cjs generate",
     "db:push": "node scripts/prisma.cjs db push",
@@ -40,6 +41,7 @@
     "recharts": "^3.10.1",
     "tailwind-merge": "^3.6.0",
     "tsx": "^4.23.13",
+    "xlsx": "^0.18.5",
     "zod": "^4.5.4"
   },
   "devDependencies": {

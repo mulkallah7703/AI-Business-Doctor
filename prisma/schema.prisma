@@ -31,20 +31,22 @@ model Organization {
   currency     String        @default("SAR")
   timezone     String        @default("Asia/Riyadh")
   sector       String
-  city         String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  memberships  Membership[]
-  products     Product[]
-  customers    Customer[]
-  leads        Lead[]
-  campaigns    Campaign[]
-  employees    Employee[]
-  dailyMetrics DailyMetric[]
-  insights     Insight[]
-  actions      Action[]
-  briefings    Briefing[]
-  dataSources  DataSource[]
+  city                  String
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  memberships           Membership[]
+  products              Product[]
+  customers             Customer[]
+  leads                 Lead[]
+  campaigns             Campaign[]
+  employees             Employee[]
+  dailyMetrics          DailyMetric[]
+  insights              Insight[]
+  actions               Action[]
+  briefings             Briefing[]
+  dataSources           DataSource[]
+  importBatches         ImportBatch[]
 }
 
 model Membership {
@@ -222,8 +224,25 @@ model DataSource {
   nameEn         String
   category       String
   connected      Boolean      @default(false)
+  status         String       @default("disconnected")
+  ingestMode     String       @default("upload")
   lastSyncAt     DateTime?
+  lastError      String?
+  configJson     String?
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, key])
+}
+
+model ImportBatch {
+  id             String       @id @default(cuid())
+  organizationId String
+  dataSourceKey  String
+  kind           String
+  fileName       String
+  rowCount       Int
+  status         String
+  errorMessage   String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }

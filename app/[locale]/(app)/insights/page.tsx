@@ -6,6 +6,7 @@ import { Badge, severityVariant } from "@/components/ui/badge";
 import { Link } from "@/i18n/navigation";
 import { field } from "@/lib/utils";
 import { formatSar } from "@/lib/format";
+import { EmptyState } from "@/components/empty-state";
 
 const rank = { critical: 0, high: 1, medium: 2, low: 3 };
 
@@ -18,6 +19,7 @@ export default async function InsightsPage({
   setRequestLocale(locale);
   const { organization } = await requireOrg();
   const t = await getTranslations("insights");
+  const emptyT = await getTranslations("empty");
   const insights = await prisma.insight.findMany({
     where: { organizationId: organization.id },
   });
@@ -31,6 +33,13 @@ export default async function InsightsPage({
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("lead")}</p>
       </div>
+      {sorted.length === 0 ? (
+        <EmptyState
+          title={emptyT("insightsTitle")}
+          body={emptyT("insightsBody")}
+          actionLabel={emptyT("connectCta")}
+        />
+      ) : null}
       <div className="grid gap-4">
         {sorted.map((insight) => (
           <Card key={insight.id}>

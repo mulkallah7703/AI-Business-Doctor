@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { BrandMark } from "@/components/brand-mark";
@@ -13,17 +14,17 @@ import { Input } from "@/components/ui/input";
 export function LoginForm() {
   const t = useTranslations("auth");
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  const demo = searchParams.get("demo") === "1";
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function authenticate(email: string, password: string) {
     setPending(true);
     setError("");
-    const form = new FormData(event.currentTarget);
     const result = await signIn("credentials", {
-      email: form.get("email"),
-      password: form.get("password"),
+      email,
+      password,
       redirect: false,
     });
     setPending(false);
@@ -32,6 +33,12 @@ export function LoginForm() {
       return;
     }
     window.location.href = `/${locale}/briefing`;
+  }
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await authenticate(String(form.get("email") ?? ""), String(form.get("password") ?? ""));
   }
 
   return (
@@ -55,25 +62,48 @@ export function LoginForm() {
               <Input
                 name="email"
                 type="email"
-                defaultValue="demo@businessdoctor.ai"
+                defaultValue={demo ? "demo@businessdoctor.ai" : ""}
+                autoComplete="email"
                 required
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm">{t("password")}</label>
-              <Input name="password" type="password" defaultValue="demo1234" required />
+              <Input
+                name="password"
+                type="password"
+                defaultValue={demo ? "demo1234" : ""}
+                autoComplete="current-password"
+                required
+              />
             </div>
             {error ? <p className="text-sm text-rose-300">{error}</p> : null}
             <Button className="w-full" disabled={pending}>
               {pending ? "…" : t("submit")}
             </Button>
           </form>
-          <p className="mt-4 text-xs text-muted-foreground">
-            {t("demoHint")}: demo@businessdoctor.ai / demo1234
-          </p>
-          <Link href="/" className="mt-4 inline-block text-sm text-primary">
-            {t("back")}
-          </Link>
+          <div className="mt-4 flex flex-col gap-2 text-sm">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => authenticate("demo@businessdoctor.ai", "demo1234")}
+            >
+              {t("tryDemo")}
+            </Button>
+            <p className="text-muted-foreground">
+              {t("noAccount")}{" "}
+              <Link href="/signup" className="text-primary">
+                {t("signup")}
+              </Link>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("demoHint")}: demo@businessdoctor.ai / demo1234
+            </p>
+            <Link href="/" className="text-primary">
+              {t("back")}
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

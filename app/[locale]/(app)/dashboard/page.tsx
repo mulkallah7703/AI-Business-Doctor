@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge, healthVariant } from "@/components/ui/badge";
 import { Link } from "@/i18n/navigation";
 import { formatNumber } from "@/lib/format";
+import { EmptyState } from "@/components/empty-state";
 
 export default async function DashboardPage({
   params,
@@ -34,6 +35,25 @@ export default async function DashboardPage({
 
   const dashboard = computeDashboard({ metrics, insights, products, leads, campaigns });
   const health = computeHealth({ metrics, insights, products, leads, campaigns });
+  const emptyT = await getTranslations("empty");
+
+  if (metrics.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold">{nav("dashboard")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("vsPrev")}</p>
+        </div>
+        <EmptyState
+          title={emptyT("dashboardTitle")}
+          body={emptyT("dashboardBody")}
+          actionLabel={emptyT("connectCta")}
+          secondaryHref="/sources"
+          secondaryLabel={emptyT("manualCta")}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

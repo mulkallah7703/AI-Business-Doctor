@@ -1,10 +1,12 @@
 # طبيب الأعمال الذكي · AI Business Doctor
 
-A bilingual (Arabic-first, English toggle) SaaS MVP that acts as a continuous AI CEO advisor for SMEs. It is a briefing and diagnosis tool, not a traditional BI dashboard.
+A bilingual (Arabic-first, English toggle) **multi-tenant SaaS** that acts as a continuous AI CEO advisor for SMEs. It is a briefing and diagnosis tool, not a traditional BI dashboard.
 
 Core loop: **Detect → Diagnose → Predict → Recommend → Act → Measure**
 
-## Demo
+Each founder signs up, creates an organization, completes onboarding, and connects data (CSV / Excel or manual KPIs). Dashboards, health, briefing, and insights run on **that org’s data only**. The seeded Al-Noor workspace is an optional “Try demo” path — never the only path.
+
+## Demo (optional)
 
 ```
 Email:    demo@businessdoctor.ai
@@ -12,7 +14,7 @@ Password: demo1234
 Org:      مؤسسة النور للتجارة (Al-Noor Trading Establishment)
 ```
 
-The seed is a 90-day Saudi retail / e-commerce story with intentional anomalies: conversion drop, cash-flow pressure, rising ops cost, neglected WhatsApp leads, high-margin Argan opportunity, and diluted ad ROI.
+The seed is a 90-day Saudi retail / e-commerce story with intentional anomalies. Reseeding **only** rebuilds this tenant. Signup organizations are never copied from it and are never wiped by `npm run seed`.
 
 ## Quick start (local / SQLite)
 
@@ -25,6 +27,16 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Locale defaults to Arabic (`/ar`) with RTL.
+
+### Test signup + CSV (the real product loop)
+
+1. Open `/ar` → **إنشاء حساب**
+2. Register a new email (not the demo address). You land on a 3-step Arabic-first onboarding wizard (profile → sources → connect/skip).
+3. Finish onboarding. The command center is empty until data arrives.
+4. Go to **مصادر البيانات** → Sales / orders → upload a CSV. A sample file is available from that screen (`date,revenue,orders,…`).
+5. Confirm column mapping. Revenue appears on **مركز القيادة** for that org only.
+6. Open a second browser profile, sign up another org, and confirm no data bleed.
+7. Optional: `/ar/login?demo=1` still opens Al-Noor.
 
 `DATABASE_URL=file:./dev.db` keeps Prisma on SQLite locally. Do not point a Vercel deploy at a `file:` URL — the serverless filesystem will not persist it.
 
@@ -65,6 +77,7 @@ Set these for **Production** (and Preview if you want login there too):
 | `OPENAI_API_KEY` | no | Live model. Mock AI is used when empty. |
 | `OPENAI_BASE_URL` | no | Default `https://api.openai.com/v1` |
 | `OPENAI_MODEL` | no | Default `gpt-4o-mini` |
+| `DATA_SOURCE_SECRET` | no | Encrypts connector `configJson`. Falls back to `NEXTAUTH_SECRET`. |
 
 `NEXTAUTH_SECRET` and a Postgres URL are the two things that will break a live login if missing.
 
@@ -116,11 +129,12 @@ See `.env.example`. Never commit `.env`.
 ## Architecture
 
 ```
-app/            [locale] pages + api/auth|actions|sources|simulator|admin/seed
-components/     shell, KPI cards, health board
-lib/ai/         mock | openai
+app/            [locale] pages + api/auth|signup|org|import|metrics|actions|sources|simulator|admin/seed
+components/     shell, KPI cards, health board, empty states
+lib/ai/         mock | openai | org-scoped insight refresh
+lib/import/     CSV/Excel parse, column map, tenant-scoped commit
 lib/analytics/  KPIs, health, simulator
-lib/seed.ts     shared demo seed (CLI + gated HTTP)
+lib/seed.ts     demo tenant only (CLI + gated HTTP)
 scripts/        prisma.cjs (sqlite|postgres) + vercel-build.cjs
 prisma/         Postgres schema (SQLite derived at generate time)
 ```
@@ -131,10 +145,11 @@ prisma/         Postgres schema (SQLite derived at generate time)
 | --- | --- |
 | `npm run dev` | Next.js + Turbopack |
 | `npm run db:push` | Sync schema (SQLite or Postgres from `DATABASE_URL`) |
-| `npm run seed` | Rebuild demo org (local; `SEED_RESET=false` to skip if present) |
+| `npm run seed` | Rebuild **demo org only** (local; `SEED_RESET=false` to skip if present) |
+| `npm test` | Import mapping / number / date unit checks |
 | `npm run build` | Local production build (no db push) |
 | `npm run build:vercel` | Generate + `db push` + optional seed + Next build |
 
 ## Out of scope (intentionally)
 
-Real WhatsApp / CRM / ads OAuth, multi-user RBAC, Stripe billing, native mobile, and true ML forecasting.
+Full production OAuth for WhatsApp / Meta / Salla / banks, Stripe billing, mobile apps, and true ML models. Owner role works; team invite is a placeholder.

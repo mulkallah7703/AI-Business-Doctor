@@ -33,8 +33,11 @@ export default async function LandingPage({
         </div>
         <div className="flex items-center gap-2">
           <LocaleSwitcher />
-          <Button asChild>
+          <Button variant="ghost" asChild>
             <Link href="/login">{nav("login")}</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/signup">{nav("signup")}</Link>
           </Button>
         </div>
       </header>
@@ -49,10 +52,10 @@ export default async function LandingPage({
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button size="lg" asChild>
-            <Link href="/login">{t("ctaPrimary")}</Link>
+            <Link href="/signup">{t("ctaPrimary")}</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
-            <a href="#pipeline">{t("ctaSecondary")}</a>
+            <Link href="/login?demo=1">{t("ctaDemo")}</Link>
           </Button>
         </div>
         <p className="mt-5 text-sm text-muted-foreground">{t("trust")}</p>
@@ -84,29 +87,7 @@ export default async function LandingPage({
             <Card key={key}>
               <CardContent>
                 <h3 className="font-semibold">{nav(key)}</h3>
-                <p className="mt-2 text-sm leading-7 text-slate-300">
-                  {locale === "en"
-                    ? {
-                        briefing:
-                          "A morning note with five ranked items — urgent, opportunity, risk, growth, recommendation — not a wall of charts.",
-                        health:
-                          "One 0–100 score with six explainable pillars. Click a pillar to see what is actually driving it.",
-                        insights:
-                          "Each finding walks Detect → Diagnose → Predict → Recommend and names the SAR effect.",
-                        simulator:
-                          "Ask what happens if you raise prices, cut ads, hire, or focus a SKU — before you spend the week on it.",
-                      }[key]
-                    : {
-                        briefing:
-                          "ملاحظة صباحية بخمس أولويات مرتبة — مشكلة، فرصة، مخاطرة، نمو، توصية — لا جدار رسوم.",
-                        health:
-                          "درجة من 0 إلى 100 وستة أركان قابلة للشرح. اضغط الركن لترى ما يحرّكه فعلاً.",
-                        insights:
-                          "كل رؤية تمشي اكتشف → شخّص → توقّع → أوصِ، وتسمّي الأثر بالريال.",
-                        simulator:
-                          "اسأل ماذا يحدث إذا رفعت السعر أو خفضت الإعلان أو وظّفت أو ركّزت صنفاً — قبل أن تصرف الأسبوع عليه.",
-                      }[key]}
-                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-300">{t(`feature.${key}`)}</p>
               </CardContent>
             </Card>
           ))}
@@ -135,6 +116,9 @@ export default async function LandingPage({
                       <li key={item}>— {item}</li>
                     ))}
                   </ul>
+                  <Button asChild variant={tier === "growth" ? "default" : "outline"}>
+                    <Link href="/signup">{t("ctaPrimary")}</Link>
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -147,13 +131,16 @@ export default async function LandingPage({
           <CardContent className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
             <div>
               <h2 className="text-2xl font-semibold">{t("ctaBand")}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                demo@businessdoctor.ai · demo1234
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">{t("ctaBandLead")}</p>
             </div>
-            <Button size="lg" asChild>
-              <Link href="/login">{t("ctaBandBtn")}</Link>
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button size="lg" asChild>
+                <Link href="/signup">{t("ctaPrimary")}</Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/login?demo=1">{t("ctaDemo")}</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </section>

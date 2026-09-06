@@ -1,14 +1,51 @@
-import type { BriefingPayload, SimulationResult } from "./types";
+import type { BriefingPayload, BriefingKind, SimulationResult } from "./types";
 import type { DashboardModel } from "@/lib/analytics/metrics";
 import { runSimulation } from "@/lib/analytics/simulator";
-import type { Product } from "@prisma/client";
+import type { Insight, Product } from "@prisma/client";
 import type { SimulationScenario } from "./types";
+import { emptyBriefing } from "./empty";
 
-export function mockBriefing(dashboard: DashboardModel, locale: string): BriefingPayload {
+const typeToKind: Record<string, BriefingKind> = {
+  problem: "urgent",
+  risk: "risk",
+  opportunity: "opportunity",
+  growth: "growth",
+  recommendation: "recommendation",
+};
+
+export function mockBriefing(
+  dashboard: DashboardModel,
+  locale: string,
+  insights: Insight[] = [],
+): BriefingPayload {
   const ar = locale !== "en";
   const conv = (dashboard.conversion14 * 100).toFixed(1);
   const prev = (dashboard.prevConversion14 * 100).toFixed(1);
   const cashK = Math.round(dashboard.cash / 1000);
+
+  if (dashboard.revenue30 === 0 && insights.length === 0 && dashboard.cash === 0) {
+    return emptyBriefing(locale);
+  }
+
+  if (insights.length > 0) {
+    return {
+      source: "mock",
+      greeting: ar
+        ? "صباح الخير. هذه أهم ما تحتاج انتباهك اليوم من بيانات منشأتك"
+        : "Good morning. These are the items that need your attention from your own data",
+      summary: ar
+        ? `الإيراد ${Math.round(dashboard.revenue30).toLocaleString("ar-SA")} ر.س على آخر 30 يوماً، والتحويل ${conv}٪، والرصيد قرب ${cashK} ألف. الدورة: اكتشف → شخّص → توقّع → أوصِ.`
+        : `Revenue is ${Math.round(dashboard.revenue30).toLocaleString("en-US")} SAR over the last 30 days, conversion ${conv}%, cash near SAR ${cashK}k. Loop: detect → diagnose → predict → recommend.`,
+      items: insights.slice(0, 5).map((insight, index) => ({
+        rank: index + 1,
+        kind: typeToKind[insight.type] ?? "recommendation",
+        title: ar ? insight.titleAr : insight.titleEn,
+        body: ar ? insight.detectAr : insight.detectEn,
+        insightSlug: insight.slug,
+        effectSar: insight.financialEffect,
+      })),
+    };
+  }
 
   return {
     source: "mock",

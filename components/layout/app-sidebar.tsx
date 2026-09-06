@@ -9,6 +9,7 @@ import {
   Gauge,
   LayoutDashboard,
   Plug,
+  Settings,
   SlidersHorizontal,
   Stethoscope,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const items = [
   { href: "/simulator", key: "simulator", icon: SlidersHorizontal },
   { href: "/actions", key: "actions", icon: ClipboardList },
   { href: "/sources", key: "sources", icon: Plug },
+  { href: "/settings", key: "settings", icon: Settings },
 ] as const;
 
 export function AppSidebar() {

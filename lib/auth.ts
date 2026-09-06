@@ -31,7 +31,9 @@ export const authOptions: NextAuthOptions = {
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
 
-        const organizationId = user.memberships[0]?.organizationId ?? "";
+        const membership =
+          user.memberships.find((item) => item.role === "owner") ?? user.memberships[0];
+        const organizationId = membership?.organizationId ?? "";
         return {
           id: user.id,
           email: user.email,

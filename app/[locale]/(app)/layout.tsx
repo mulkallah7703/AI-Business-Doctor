@@ -1,5 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
-import { requireOrg } from "@/lib/session";
+import { requireOnboardedOrg } from "@/lib/session";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
@@ -17,7 +17,7 @@ export default async function AppLayout({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const { organization, user } = await requireOrg();
+  const { organization, user } = await requireOnboardedOrg();
 
   return (
     <div className="flex min-h-screen">

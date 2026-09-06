@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
+import { CONNECTOR_CATALOG, DEMO_EMAIL, DEMO_ORG_ID, DEMO_USER_ID } from "./connectors";
 import { prisma } from "./prisma";
 
-const ORG_ID = "org_alnoor";
-const USER_ID = "user_demo";
+const ORG_ID = DEMO_ORG_ID;
+const USER_ID = DEMO_USER_ID;
 
 function mulberry32(seed: number) {
   return function rand() {
@@ -35,19 +36,23 @@ export async function seedDemo(options?: { reset?: boolean; disconnect?: boolean
     return { seeded: false, skipped: true as const };
   }
 
-  await prisma.briefing.deleteMany();
-  await prisma.action.deleteMany();
-  await prisma.insight.deleteMany();
-  await prisma.dailyMetric.deleteMany();
-  await prisma.lead.deleteMany();
-  await prisma.customer.deleteMany();
-  await prisma.campaign.deleteMany();
-  await prisma.employee.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.dataSource.deleteMany();
-  await prisma.membership.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.organization.deleteMany();
+  // Only the demo tenant is rebuilt. Signup orgs must never be wiped here.
+  await prisma.importBatch.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.briefing.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.action.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.insight.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.dailyMetric.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.lead.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.customer.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.campaign.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.employee.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.product.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.dataSource.deleteMany({ where: { organizationId: ORG_ID } });
+  await prisma.membership.deleteMany({
+    where: { OR: [{ organizationId: ORG_ID }, { userId: USER_ID }] },
+  });
+  await prisma.user.deleteMany({ where: { id: USER_ID } });
+  await prisma.organization.deleteMany({ where: { id: ORG_ID } });
 
   const passwordHash = await bcrypt.hash("demo1234", 10);
 
@@ -61,6 +66,7 @@ export async function seedDemo(options?: { reset?: boolean; disconnect?: boolean
       timezone: "Asia/Riyadh",
       sector: "retail_ecommerce",
       city: "الرياض",
+      onboardingCompletedAt: new Date(),
     },
   });
 
@@ -766,11 +772,16 @@ export async function seedDemo(options?: { reset?: boolean; disconnect?: boolean
   ];
 
   await prisma.dataSource.createMany({
-    data: sources.map((s) => ({
-      ...s,
-      organizationId: org.id,
-      lastSyncAt: s.connected ? addDays(today, -1) : null,
-    })),
+    data: sources.map((s) => {
+      const catalog = CONNECTOR_CATALOG.find((item) => item.key === s.key);
+      return {
+        ...s,
+        organizationId: org.id,
+        status: s.connected ? "connected" : "disconnected",
+        ingestMode: catalog?.ingestMode ?? "upload",
+        lastSyncAt: s.connected ? addDays(today, -1) : null,
+      };
+    }),
   });
 
   const briefingItemsAr = [
