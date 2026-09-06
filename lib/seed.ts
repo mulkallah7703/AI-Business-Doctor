@@ -27,7 +27,7 @@ function addDays(date: Date, days: number) {
 export async function seedDemo(options?: { reset?: boolean; disconnect?: boolean }) {
   const reset = options?.reset ?? false;
   const existing = await prisma.user.findUnique({
-    where: { email: "demo@businessdoctor.ai" },
+    where: { email: DEMO_EMAIL },
   });
 
   if (existing && !reset) {

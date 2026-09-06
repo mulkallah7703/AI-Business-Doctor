@@ -24,6 +24,12 @@ const METRIC_DEFAULTS = {
   stockouts: 0,
 };
 
+function definedOnly<T extends Record<string, number | undefined>>(patch: T) {
+  return Object.fromEntries(
+    Object.entries(patch).filter(([, value]) => value !== undefined),
+  ) as Partial<typeof METRIC_DEFAULTS>;
+}
+
 async function upsertMetric(
   db: Db,
   organizationId: string,
@@ -31,13 +37,14 @@ async function upsertMetric(
   patch: Partial<typeof METRIC_DEFAULTS>,
 ) {
   const day = utcDay(date);
+  const data = definedOnly(patch);
   const existing = await db.dailyMetric.findUnique({
     where: { organizationId_date: { organizationId, date: day } },
   });
   if (existing) {
     return db.dailyMetric.update({
       where: { id: existing.id },
-      data: patch,
+      data,
     });
   }
   return db.dailyMetric.create({
@@ -45,7 +52,7 @@ async function upsertMetric(
       organizationId,
       date: day,
       ...METRIC_DEFAULTS,
-      ...patch,
+      ...data,
     },
   });
 }
