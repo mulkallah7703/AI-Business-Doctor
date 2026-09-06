@@ -1,0 +1,227 @@
+// SQLite for local/demo. To use Postgres later: change provider to
+// "postgresql" and point DATABASE_URL at your instance. IDs, relations,
+// and field types are intentionally portable.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id
+  email        String       @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+}
+
+model Organization {
+  id           String        @id
+  name         String
+  nameEn       String
+  slug         String        @unique
+  currency     String        @default("SAR")
+  timezone     String        @default("Asia/Riyadh")
+  sector       String
+  city         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  memberships  Membership[]
+  products     Product[]
+  customers    Customer[]
+  leads        Lead[]
+  campaigns    Campaign[]
+  employees    Employee[]
+  dailyMetrics DailyMetric[]
+  insights     Insight[]
+  actions      Action[]
+  briefings    Briefing[]
+  dataSources  DataSource[]
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  role           String       @default("owner")
+  userId         String
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model Product {
+  id             String       @id
+  organizationId String
+  sku            String
+  nameAr         String
+  nameEn         String
+  category       String
+  price          Float
+  cost           Float
+  stock          Int
+  reorderPoint   Int
+  unitsSold90d   Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, sku])
+}
+
+model Customer {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  segment        String
+  lifetimeValue  Float
+  lastOrderAt    DateTime?
+  ordersCount    Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  source         String
+  status         String
+  createdAt      DateTime
+  lastTouchAt    DateTime?
+  estimatedValue Float
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id             String       @id @default(cuid())
+  organizationId String
+  nameAr         String
+  nameEn         String
+  channel        String
+  spend          Float
+  revenue        Float
+  clicks         Int
+  conversions    Int
+  startDate      DateTime
+  endDate        DateTime
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Employee {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  role           String
+  department     String
+  salary         Float
+  utilization    Float
+  overtimeHours  Float
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model DailyMetric {
+  id               String       @id @default(cuid())
+  organizationId   String
+  date             DateTime
+  revenue          Float
+  orders           Int
+  expenses         Float
+  cogs             Float
+  cashBalance      Float
+  cashIn           Float
+  cashOut          Float
+  leads            Int
+  conversions      Int
+  sessions         Int
+  adSpend          Float
+  refunds          Float
+  nps              Float
+  fulfillmentHours Float
+  stockouts        Int
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, date])
+}
+
+model Insight {
+  id              String       @id
+  organizationId  String
+  slug            String
+  type            String
+  severity        String
+  pillar          String
+  titleAr         String
+  titleEn         String
+  detectAr        String
+  detectEn        String
+  diagnoseAr      String
+  diagnoseEn      String
+  predictAr       String
+  predictEn       String
+  recommendAr     String
+  recommendEn     String
+  narrativeAr     String
+  narrativeEn     String
+  financialEffect Float
+  predictedImpact Float
+  driversJson     String
+  createdAt       DateTime     @default(now())
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actions         Action[]
+
+  @@unique([organizationId, slug])
+}
+
+model Action {
+  id              String       @id
+  organizationId  String
+  insightId       String?
+  titleAr         String
+  titleEn         String
+  descriptionAr   String
+  descriptionEn   String
+  status          String
+  priority        String
+  estimatedEffect Float
+  beforeMetric    String?
+  afterMetric     String?
+  outcomeAr       String?
+  outcomeEn       String?
+  executedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  insight         Insight?     @relation(fields: [insightId], references: [id], onDelete: SetNull)
+}
+
+model Briefing {
+  id             String       @id @default(cuid())
+  organizationId String
+  date           DateTime
+  locale         String
+  greeting       String
+  summary        String
+  itemsJson      String
+  source         String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, date, locale])
+}
+
+model DataSource {
+  id             String       @id
+  organizationId String
+  key            String
+  nameAr         String
+  nameEn         String
+  category       String
+  connected      Boolean      @default(false)
+  lastSyncAt     DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, key])
+}
