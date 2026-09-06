@@ -5,11 +5,13 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:vercel": "node scripts/vercel-build.cjs",
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate",
-    "db:push": "prisma db push"
+    "postinstall": "node scripts/prisma.cjs generate",
+    "db:push": "node scripts/prisma.cjs db push",
+    "prisma": "node scripts/prisma.cjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -32,10 +34,12 @@
     "next": "15.5.25",
     "next-auth": "^4.24.15",
     "next-intl": "^4.14.2",
+    "prisma": "^6.19.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "recharts": "^3.10.1",
     "tailwind-merge": "^3.6.0",
+    "tsx": "^4.23.13",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -47,9 +51,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.25",
-    "prisma": "^6.19.3",
     "tailwindcss": "^4",
-    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

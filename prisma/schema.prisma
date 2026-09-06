@@ -1,14 +1,16 @@
-// SQLite for local/demo. To use Postgres later: change provider to
-// "postgresql" and point DATABASE_URL at your instance. IDs, relations,
-// and field types are intentionally portable.
+// Production default is PostgreSQL (Neon / Vercel Postgres).
+// Local `file:./dev.db` still uses SQLite — `scripts/prisma.cjs` derives
+// a SQLite schema from this file so models stay in one place.
+// IDs, relations, and field types stay portable across both providers.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

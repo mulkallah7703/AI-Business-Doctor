@@ -1,0 +1,80 @@
+#!/usr/bin/env node
+/**
+ * Routes Prisma to SQLite (local file: URLs) or Postgres (production).
+ * Generates a throwaway SQLite schema from prisma/schema.prisma so models stay DRY.
+ */
+const { spawnSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+
+function loadDotEnv() {
+  const envPath = path.join(process.cwd(), ".env");
+  if (!fs.existsSync(envPath)) return;
+  for (const raw of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
+}
+
+loadDotEnv();
+
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL =
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.NEON_DATABASE_URL ||
+    "file:./dev.db";
+}
+
+if (!process.env.DIRECT_URL) {
+  process.env.DIRECT_URL =
+    process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL;
+}
+
+const databaseUrl = process.env.DATABASE_URL || "file:./dev.db";
+const isSqlite = /^(file:|sqlite:)/i.test(databaseUrl);
+
+if (process.env.VERCEL && isSqlite) {
+  console.error(
+    "DATABASE_URL is SQLite, which cannot persist on Vercel.\n" +
+      "Set a Neon or Vercel Postgres URL, and set DIRECT_URL to the unpooled URL.",
+  );
+  process.exit(1);
+}
+
+const postgresSchema = path.join("prisma", "schema.prisma");
+let schema = postgresSchema;
+
+if (isSqlite) {
+  const source = fs.readFileSync(postgresSchema, "utf8");
+  const sqlite = source
+    .replace(/provider\s*=\s*"postgresql"/, 'provider = "sqlite"')
+    .replace(/\n\s*directUrl\s*=\s*env\("DIRECT_URL"\)/, "");
+  schema = path.join("prisma", "schema.sqlite.prisma");
+  fs.writeFileSync(
+    schema,
+    `// Generated from schema.prisma for local SQLite. Do not edit.\n${sqlite}`,
+  );
+}
+
+const prismaCli = require.resolve("prisma/build/index.js");
+const forwarded = process.argv.slice(2);
+const args = [...forwarded, "--schema", schema];
+
+const result = spawnSync(process.execPath, [prismaCli, ...args], {
+  stdio: "inherit",
+  env: process.env,
+});
+
+process.exit(result.status ?? 1);
