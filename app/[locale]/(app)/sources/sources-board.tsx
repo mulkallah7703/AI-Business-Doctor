@@ -202,6 +202,15 @@ export function SourcesBoard({
         {sources.map((source) => (
           <Card key={source.id}>
             <CardContent className="flex items-start justify-between gap-4">
+              <button
+                type="button"
+                className="min-w-0 flex-1 text-start"
+                onClick={() => {
+                  if (source.ingestMode !== "oauth" || source.importKinds.length) {
+                    openSource(source);
+                  }
+                }}
+              >
               <div>
                 <h2 className="font-semibold">{field(locale, source.nameAr, source.nameEn)}</h2>
                 <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
@@ -220,14 +229,15 @@ export function SourcesBoard({
                   <p className="mt-1 text-xs text-rose-300">{source.lastError}</p>
                 ) : null}
               </div>
-              <div className="flex flex-col items-end gap-2">
+              </button>
+              <div className="flex shrink-0 flex-col items-end gap-2">
                 <Badge variant={statusVariant(source.status)}>{t(`status.${source.status}`)}</Badge>
                 {source.ingestMode === "oauth" && !source.importKinds.length ? (
                   <Button size="sm" variant="outline" disabled>
                     {t("comingSoon")}
                   </Button>
                 ) : (
-                  <Button size="sm" onClick={() => openSource(source)}>
+                  <Button type="button" size="sm" onClick={() => openSource(source)}>
                     {source.ingestMode === "oauth" ? t("uploadInstead") : t("connect")}
                   </Button>
                 )}

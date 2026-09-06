@@ -15,7 +15,7 @@ export default async function SourcesPage({
   const t = await getTranslations("sources");
   const sources = await prisma.dataSource.findMany({
     where: { organizationId: organization.id },
-    orderBy: { nameEn: "asc" },
+    orderBy: [{ category: "asc" }, { nameEn: "asc" }],
   });
 
   return (
@@ -27,7 +27,18 @@ export default async function SourcesPage({
       </div>
       <SourcesBoard
         locale={locale}
-        sources={sources.map((source) => {
+        sources={[...sources]
+          .sort((a, b) => {
+            const rank = (key: string) => {
+              const item = connectorByKey(key);
+              if (item?.ingestMode === "upload") return 0;
+              if (item?.importKinds.length) return 1;
+              if (item?.ingestMode === "manual") return 2;
+              return 3;
+            };
+            return rank(a.key) - rank(b.key);
+          })
+          .map((source) => {
           const catalog = connectorByKey(source.key);
           return {
             id: source.id,
