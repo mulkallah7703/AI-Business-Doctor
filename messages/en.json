@@ -270,6 +270,7 @@
     "close": "Close",
     "uploadTitle": "File upload",
     "uploadLead": "Upload CSV or Excel, review columns, then confirm the import into your organization only.",
+    "chooseOrDrop": "Choose a CSV or Excel file, or drop it here.",
     "kind": "Data type",
     "kinds": {
       "sales": "Sales / orders",

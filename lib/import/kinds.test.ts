@@ -10,7 +10,22 @@ import {
   normalizePhone,
 } from "./aggregate";
 import { commitImport, markSourceImported } from "./commit";
-import { IMPORT_KINDS, type ImportKind } from "@/lib/connectors";
+import { CONNECTOR_CATALOG, IMPORT_KINDS, sourceAcceptsUpload, type ImportKind } from "@/lib/connectors";
+
+const mustOpenUpload = ["sales", "expenses", "crm", "inventory", "ads", "employees"];
+const comingSoonOnly = ["banking", "ecommerce", "whatsapp", "bookings"];
+
+for (const key of mustOpenUpload) {
+  const item = CONNECTOR_CATALOG.find((connector) => connector.key === key);
+  assert.ok(item, `${key} should exist in the catalog`);
+  assert.equal(sourceAcceptsUpload(item), true, `${key} must open the CSV/Excel upload flow`);
+}
+
+for (const key of comingSoonOnly) {
+  const item = CONNECTOR_CATALOG.find((connector) => connector.key === key);
+  assert.ok(item, `${key} should exist in the catalog`);
+  assert.equal(sourceAcceptsUpload(item), false, `${key} stays coming-soon (no upload kinds)`);
+}
 
 function mapKind(kind: ImportKind, rows: Record<string, string>[], columns = Object.keys(rows[0] ?? {})) {
   return applyMapping(rows, suggestMapping(columns, kind), kind);

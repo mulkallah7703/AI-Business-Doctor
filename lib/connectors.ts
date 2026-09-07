@@ -141,6 +141,15 @@ export function connectorByKey(key: string) {
   return CONNECTOR_CATALOG.find((item) => item.key === key);
 }
 
+/** True when the Sources card must open the CSV/Excel upload flow. */
+export function sourceAcceptsUpload(source: { importKinds: readonly string[] }) {
+  return source.importKinds.length > 0;
+}
+
+export function defaultImportKind(source: { importKinds: readonly ImportKind[] }): ImportKind | null {
+  return source.importKinds[0] ?? null;
+}
+
 export const SECTORS = [
   { key: "retail_ecommerce", ar: "تجزئة وتجارة إلكترونية", en: "Retail & e-commerce" },
   { key: "hospitality", ar: "ضيافة ومطاعم", en: "Hospitality & restaurants" },
