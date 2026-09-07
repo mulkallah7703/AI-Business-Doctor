@@ -208,33 +208,6 @@ export function SourcesBoard({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t("formatsTitle")}</CardTitle>
-          <p className="text-sm text-muted-foreground">{t("formatsLead")}</p>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm md:grid-cols-2">
-          {(["sales", "expenses", "customers", "leads", "inventory", "campaigns", "employees", "ops"] as ImportKind[]).map(
-            (item) => (
-              <div key={item} className="rounded-lg border border-border/70 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium">{t(`kinds.${item}`)}</p>
-                  <a className="text-xs text-primary" href={`/api/import/sample?kind=${item}`}>
-                    {t("sample")}
-                  </a>
-                </div>
-                <ColumnContract
-                  kind={item}
-                  locale={locale}
-                  requiredLabel={t("required")}
-                  optionalLabel={t("optional")}
-                />
-              </div>
-            ),
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>{t("manualTitle")}</CardTitle>
           <p className="text-sm text-muted-foreground">{t("manualLead")}</p>
         </CardHeader>
