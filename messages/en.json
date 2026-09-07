@@ -281,8 +281,6 @@
       "employees": "Employees",
       "ops": "Ops KPIs"
     },
-    "formatsTitle": "Accepted file formats",
-    "formatsLead": "CSV or Excel with a header row. Arabic and English column names both work. Download a sample, then confirm the mapping.",
     "required": "Required",
     "optional": "Optional",
     "sample": "Download sample",
